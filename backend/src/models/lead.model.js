@@ -1,84 +1,84 @@
 import mongoose from "mongoose";
 
 const leadSchema = new mongoose.Schema({
-personalDetails:{
-   fullName:{
-    type:String,
-    required:true,
-   },
-    mobile:{
-        type:String,
-        required:true,
-        unique:true
+  personalDetails: {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    mobile: {
+      type: String,
+      required: true,
+      unique: true
 
     },
-    alternateNumber:{
-        type:String,
+    alternateNumber: {
+      type: String,
     },
-    emailId:{
-        type:String,
-        required:true,
-        unique:true
+    emailId: {
+      type: String,
+      required: true,
+      unique: true
     },
-    title:{
-        type:String,
-        enum:['Mr','Mrs','Ms'],
-        default:"Mr"
+    title: {
+      type: String,
+      enum: ['Mr', 'Mrs', 'Ms'],
+      default: "Mr"
     },
-    dateOfBirth:{
-        type:String,
-        required:true
+    dateOfBirth: {
+      type: String,
+      required: true
     }
-},
-location:{
-    country:{
-        type:String,
-        default:'India',
-        required:true,
+  },
+  location: {
+    country: {
+      type: String,
+      default: 'India',
+      required: true,
 
     },
-    state:{
-        type:String,
-        required:true,
+    state: {
+      type: String,
+      required: true,
 
     },
-    city:{
-        type:String,
-        required:true
+    city: {
+      type: String,
+      required: true
     }
-},
-address:{
-    addressLine1:{
-        type:String,
-        required:true
+  },
+  address: {
+    addressLine1: {
+      type: String,
+      required: true
     },
-    addressLine2:{
-        type:String,
+    addressLine2: {
+      type: String,
     },
-    addressLine3:{
-        type:String
+    addressLine3: {
+      type: String
     },
-    pincode:{
-        type:String,
-        required:true
+    pincode: {
+      type: String,
+      required: true
     }
-},
-officialDetail:{
-businessType: {
-    type: String,
-    enum: ['B2B', 'B2C'],
-    required: true,
   },
-  priority: {
-    type: String,
-    enum: ['High', 'Medium', 'Low'],
-    required: true,
-  },
-  source: {
-    type: String,
-    
-  },
- agentName: {
+  officialDetail: {
+    businessType: {
+      type: String,
+      enum: ['B2B', 'B2C'],
+      required: true,
+    },
+    priority: {
+      type: String,
+      enum: ['High', 'Medium', 'Low'],
+      required: true,
+    },
+    source: {
+      type: String,
+
+    },
+    agentName: {
       type: String,
       validate: {
         validator: function (v) {
@@ -97,51 +97,51 @@ businessType: {
       }
     },
 
-  assignedTo: {
-    type: String,
-    required: true,
+    assignedTo: {
+      type: String,
+      required: true,
+    },
   },
-},
-leadId: {
+  leadId: {
     type: String,
     unique: true,
   },
-status:{
-  type:String,
-  enum:['Active','Cancelled','Confirmed'],
-  default:'Active',
-},
-tourDetails: {
-  tourType: String,
-  tourDestination: String,
-  servicesRequired: [String],
-  members: {
-    adults: Number,
-    children: Number,
-    kidsWithoutMattress: Number,
-    infants: Number,
+  status: {
+    type: String,
+    enum: ['Active', 'Cancelled', 'Confirmed'],
+    default: 'Active',
   },
-  pickupDrop: {
-    arrivalDate: Date,
-    arrivalCity: String,
-    arrivalLocation: String,
-    departureDate: Date,
-    departureCity: String,
-    departureLocation: String,
-  },
-  accommodation: {
-    hotelType: [String],
-    mealPlan: String,
-    transport: Boolean,
-    sharingType: String,
-    noOfRooms: Number,
-    noOfMattress: Number,
-    noOfNights: Number,
-    requirementNote: String,
+  tourDetails: {
+    tourType: String,
+    tourDestination: String,
+    servicesRequired: [String],
+    members: {
+      adults: Number,
+      children: Number,
+      kidsWithoutMattress: Number,
+      infants: Number,
+    },
+    pickupDrop: {
+      arrivalDate: Date,
+      arrivalCity: String,
+      arrivalLocation: String,
+      departureDate: Date,
+      departureCity: String,
+      departureLocation: String,
+    },
+    accommodation: {
+      hotelType: [String],
+      mealPlan: String,
+      transport: Boolean,
+      sharingType: String,
+      noOfRooms: Number,
+      noOfMattress: Number,
+      noOfNights: Number,
+      requirementNote: String,
+    }
   }
-}
 
 
 
-},{timestamps:true})
-export const Lead = new mongoose.model("Lead",leadSchema);
+}, { timestamps: true })
+export const Lead = new mongoose.model("Lead", leadSchema);

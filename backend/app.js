@@ -6,6 +6,8 @@ import path from "path";
 import swaggerUi from "swagger-ui-express";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import slipRouter from "./src/routers/slip.router.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,15 +26,22 @@ app.use('/upload', express.static(path.join(__dirname, '/upload')));
 
 // Routes
 import leadRouter from "./src/routers/lead.router.js"
-app.use('/api/v1/lead',leadRouter);
+app.use('/api/v1/lead', leadRouter);
 import staffRouter from "./src/routers/staff.router.js"
-app.use('/api/v1/staff',staffRouter);
+app.use('/api/v1/staff', staffRouter);
 
 import associateRouter from "./src/routers/associate.router.js"
-app.use('/api/v1/associate',associateRouter);
+app.use('/api/v1/associate', associateRouter);
 
 // ✅ Fix: Load JSON without import
 const swaggerDocument = JSON.parse(fs.readFileSync("./swagger-output.json", "utf-8"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// email send slip
+app.use('/api/v1/slip', slipRouter);
+
+// hotel route
+import hotelRoutes from "./src/routers/hotel.router.js";
+app.use("/api/v1", hotelRoutes);
 
 export { app };

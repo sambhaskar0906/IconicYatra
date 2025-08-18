@@ -4,9 +4,9 @@ import StaffReducer from "../features/staff/staffSlice"
 import AssociateReducer from "../features/associate/associateSlice"
 export const store = configureStore({
   reducer: {
-    leads:LeadReducer,
-    staffs:StaffReducer,
-    associate:AssociateReducer,
+    leads: LeadReducer,
+    staffs: StaffReducer,
+    associate: AssociateReducer,
 
   },
 });
