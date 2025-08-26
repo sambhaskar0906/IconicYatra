@@ -38,7 +38,7 @@ const MainRoute = () => {
                 {/*Hotel Routing */}
                 <Route path='/hotel' element={<HotelCard />} />
                 <Route path='/hotelform' element={<HotelForm />} />
-                <Route path='/hotel/hoteleditform' element={<HotelEditForm />} />
+                <Route path='/hotel/edit/:id' element={<HotelEditForm />} />
 
                 {/* Package Routing */}
                 <Route path='/tourpackage' element={<PackageCard />} />

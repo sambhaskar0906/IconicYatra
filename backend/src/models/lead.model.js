@@ -18,7 +18,6 @@ const leadSchema = new mongoose.Schema({
     emailId: {
       type: String,
       required: true,
-      unique: true
     },
     title: {
       type: String,

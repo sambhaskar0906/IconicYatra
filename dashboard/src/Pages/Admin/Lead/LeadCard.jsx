@@ -1,4 +1,4 @@
-import React ,{useEffect}from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -38,7 +38,7 @@ const stats = [
 
 const LeadCard = () => {
   const navigate = useNavigate();
- 
+
   const [anchorEls, setAnchorEls] = React.useState({});
 
   const dispatch = useDispatch();
@@ -81,24 +81,24 @@ const LeadCard = () => {
   };
 
   const handleStatusChange = (rowId, newStatus) => {
-  const lead = mappedLeads.find((item) => item.id === rowId);
+    const lead = mappedLeads.find((item) => item.id === rowId);
 
-  if (!lead || lead.leadId === "-") {
-    console.error("Invalid lead ID");
-    return;
-  }
+    if (!lead || lead.leadId === "-") {
+      console.error("Invalid lead ID");
+      return;
+    }
 
-  dispatch(changeLeadStatus({ leadId: lead.leadId, status: newStatus }))
-    .unwrap()
-    .then(() => {
-      dispatch(getAllLeads()); // Refresh list after update
-    })
-    .catch((err) => {
-      console.error("Failed to update lead status:", err);
-    });
+    dispatch(changeLeadStatus({ leadId: lead.leadId, status: newStatus }))
+      .unwrap()
+      .then(() => {
+        dispatch(getAllLeads()); // Refresh list after update
+      })
+      .catch((err) => {
+        console.error("Failed to update lead status:", err);
+      });
 
-  handleMenuClose(rowId);
-};
+    handleMenuClose(rowId);
+  };
 
 
   const mappedLeads = leadList.map((lead, index) => ({
@@ -110,7 +110,7 @@ const LeadCard = () => {
     mobile: lead.personalDetails?.mobile || "-",
     email: lead.personalDetails?.emailId || "-",
     destination: lead.location?.city || "-",
-    arrivalDate: lead.arrivalDate || "-",
+    arrivalDate: lead.pickupDrop?.arrivalDate || "-",
     priority: lead.officialDetail?.priority || "-",
     assignTo:
       lead.officialDetail?.assignedTo ||
@@ -248,7 +248,7 @@ const LeadCard = () => {
         <Box sx={{ width: "100%", overflowX: "auto" }}>
           <Box sx={{ minWidth: "600px" }}>
             <DataGrid
-              rows={mappedLeads} 
+              rows={mappedLeads}
               columns={columns}
               pageSize={7}
               rowsPerPageOptions={[7, 25, 50, 100]}

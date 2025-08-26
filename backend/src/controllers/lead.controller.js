@@ -1,10 +1,13 @@
-import {asyncHandler} from '../utils/asyncHandler.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { Lead } from '../models/lead.model.js';
-import  LeadSourceOption from '../models/LeadSourceOptions.model.js';
-import {ApiResponse} from '../utils/ApiResponse.js';
-import {ApiError} from '../utils/ApiError.js';
+import LeadSourceOption from '../models/LeadSourceOptions.model.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { ApiError } from '../utils/ApiError.js';
 import { startOfDay, startOfMonth, subMonths } from "date-fns";
 import { getNextLeadId } from "../utils/getNextLeadId.js";
+import { LeadOptions } from "../models/leadOptions.model.js"
+import { calculateAccommodation } from "../utils/calculateAccommondation.js"
+import { sendLeadThankYou } from "../../src/utils/leadEmail.js";
 
 //  Helper for single-value fields
 const handleAddMoreValue = (valueObj) => {
@@ -23,10 +26,31 @@ const handleAddMoreArray = (arr = []) => {
   }
   return arr.map((item) => handleAddMoreValue(item));
 };
+const saveAddMoreValue = async (fieldName, value) => {
+  if (!value || (Array.isArray(value) && value.length === 0)) return;
+
+  // If value is an object from Add More, extract actual value
+  if (typeof value === "object" && value.value === "addMore") {
+    value = value.newValue;
+  }
+
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const exists = await LeadOptions.findOne({ fieldName, value: v.trim() });
+      if (!exists) {
+        await LeadOptions.create({ fieldName, value: v.trim() });
+      }
+    }
+  } else {
+    const exists = await LeadOptions.findOne({ fieldName, value: value.trim() });
+    if (!exists) {
+      await LeadOptions.create({ fieldName, value: value.trim() });
+    }
+  }
+};
 
 //createLead
 export const createLead = asyncHandler(async (req, res) => {
-  
   const {
     // Personal & Official
     fullName,
@@ -68,7 +92,7 @@ export const createLead = asyncHandler(async (req, res) => {
     mealPlan,
     transport,
     sharingType,
-    noOfRooms,
+    noOfRooms = 0,
     noOfMattress,
     noOfNights,
     requirementNote,
@@ -86,6 +110,49 @@ export const createLead = asyncHandler(async (req, res) => {
   // ✅ Handle addMore for arrays
   const servicesRequiredToSave = handleAddMoreArray(servicesRequired);
   const hotelTypeToSave = handleAddMoreArray(hotelType);
+
+  await Promise.all([
+    saveAddMoreValue("source", sourceToSave),
+    saveAddMoreValue("agentName", agentNameToSave),
+    saveAddMoreValue("referredBy", referredByToSave),
+    saveAddMoreValue("tourDestination", tourDestination),
+    saveAddMoreValue("servicesRequired", servicesRequiredToSave),
+    saveAddMoreValue("arrivalCity", arrivalCityToSave),
+    saveAddMoreValue("arrivalLocation", arrivalLocationToSave),
+    saveAddMoreValue("departureCity", departureCityToSave),
+    saveAddMoreValue("departureLocation", departureLocationToSave),
+    saveAddMoreValue("hotelType", hotelTypeToSave),
+    saveAddMoreValue("mealPlan", mealPlan),
+    saveAddMoreValue("sharingType", sharingType),
+    saveAddMoreValue("country", country),
+  ]);
+
+  // ✅ Prepare members & accommodation objects
+  const members = {
+    adults,
+    children,
+    kidsWithoutMattress,
+    infants,
+  };
+
+  const accommodation = {
+    hotelType: Array.isArray(hotelType) ? hotelType : [hotelType],
+    mealPlan,
+    transport,
+    sharingType,
+    noOfRooms,
+    noOfMattress,
+    noOfNights,
+    requirementNote,
+  };
+
+  // ✅ Auto-calculate rooms & mattresses
+  const { autoCalculatedRooms, extraMattress } = calculateAccommodation(
+    members,
+    accommodation
+  );
+  accommodation.noOfRooms = autoCalculatedRooms;
+  accommodation.noOfMattress = extraMattress;
 
   // ✅ Build schema fields
   const personalDetails = {
@@ -118,13 +185,10 @@ export const createLead = asyncHandler(async (req, res) => {
   const tourDetails = {
     tourType,
     tourDestination,
-    servicesRequired: servicesRequiredToSave,
-    members: {
-      adults,
-      children,
-      kidsWithoutMattress,
-      infants,
-    },
+    servicesRequired: Array.isArray(servicesRequired)
+      ? servicesRequired
+      : [servicesRequired],
+    members,
     pickupDrop: {
       arrivalDate,
       arrivalCity: arrivalCityToSave,
@@ -133,25 +197,14 @@ export const createLead = asyncHandler(async (req, res) => {
       departureCity: departureCityToSave,
       departureLocation: departureLocationToSave,
     },
-    accommodation: {
-      hotelType: hotelTypeToSave,
-      mealPlan,
-      transport,
-      sharingType,
-      noOfRooms,
-      noOfMattress,
-      noOfNights,
-      requirementNote,
-    },
+    accommodation,
   };
 
-  
+  // ✅ Generate lead ID
   const totalLeads = await Lead.countDocuments();
-  const nextIdNumber = totalLeads + 1;
-  const leadId = await getNextLeadId(); // ✅ Guaranteed unique
+  const leadId = await getNextLeadId();
 
-
-  
+  // ✅ Create lead
   const newLead = await Lead.create({
     personalDetails,
     location,
@@ -162,25 +215,39 @@ export const createLead = asyncHandler(async (req, res) => {
     status: "Active",
   });
 
+  await sendLeadThankYou({
+    fullName,
+    email,
+    tourDestination,
+    arrivalDate,
+    arrivalCity: arrivalCityToSave,
+    arrivalLocation: arrivalLocationToSave,
+    departureDate,
+    departureCity: departureCityToSave,
+    departureLocation: departureLocationToSave,
+    members,
+    accommodation,
+    leadId
+  });
+
+
   return res
     .status(201)
-    .json(new ApiResponse(201, newLead, "Lead created successfully"));
+    .json(new ApiResponse(201, newLead, "Lead created successfully & email sent"));
 });
 
-
 // view Lead
-export const viewAllLeads = asyncHandler(async (req,res)=>{
-    try{
-        const lead = await Lead.find();
-        res.status(200)
-        .json(new ApiResponse(200,lead,"All leads fetched successfully"))
-    }
-    catch(err)
-    {
-        console.log("Error",err.message);
-        return new ApiError(404,{},"No lead found")
-        
-    }
+export const viewAllLeads = asyncHandler(async (req, res) => {
+  try {
+    const lead = await Lead.find();
+    res.status(200)
+      .json(new ApiResponse(200, lead, "All leads fetched successfully"))
+  }
+  catch (err) {
+    console.log("Error", err.message);
+    return new ApiError(404, {}, "No lead found")
+
+  }
 })
 //update Lead
 export const updateLead = asyncHandler(async (req, res) => {
@@ -344,21 +411,19 @@ export const deleteLead = asyncHandler(async (req, res) => {
 });
 
 //view by LeadId 
-export const viewByLeadId = asyncHandler(async (req,res)=>{
-  const {leadId} = req.params;
-  try{
-    const lead = await Lead.findOne({leadId});
-    if(!lead)
-    {
-      throw new ApiError(404,"Lead not found");
+export const viewByLeadId = asyncHandler(async (req, res) => {
+  const { leadId } = req.params;
+  try {
+    const lead = await Lead.findOne({ leadId });
+    if (!lead) {
+      throw new ApiError(404, "Lead not found");
     }
     res.status(200)
-    .json(new ApiResponse(201,lead,"Lead fetched Successfully By given Id"));
-    
+      .json(new ApiResponse(201, lead, "Lead fetched Successfully By given Id"));
+
   }
-  catch(err)
-  {
-    console.log("Error",err.message);
+  catch (err) {
+    console.log("Error", err.message);
   }
 })
 //change in Status
@@ -403,4 +468,29 @@ export const changeLeadStatus = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, lead, `Lead status updated from ${currentStatus} to ${status}`));
+});
+
+export const getLeadOptions = asyncHandler(async (req, res) => {
+  const options = await LeadOptions.find().sort({ fieldName: 1, value: 1 });
+
+  return res.status(200).json(
+    new ApiResponse(200, options, "Lead options fetched successfully")
+  );
+});
+export const addLeadOption = asyncHandler(async (req, res) => {
+  const { fieldName, value } = req.body;
+
+  if (!fieldName || !value) {
+    throw new ApiError(400, "fieldName and value are required");
+  }
+
+  const exists = await LeadOptions.findOne({ fieldName, value });
+
+  if (!exists) {
+    await LeadOptions.create({ fieldName, value });
+  }
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, { fieldName, value }, "Option added successfully"));
 });

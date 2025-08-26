@@ -16,7 +16,7 @@ router.post(
     "/create-hotel",
     upload.fields([
         { name: "mainImage", maxCount: 1 },
-        { name: "roomImages", maxCount: 10 },
+        { name: "roomImages", maxCount: 20 },
     ]),
     createHotel
 );

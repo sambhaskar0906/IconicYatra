@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Grid,
@@ -24,17 +24,23 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useLocation } from "react-router-dom";
 import dayjs from "dayjs";
-
+import { useDispatch, useSelector } from "react-redux";
+import { getLeadOptions, addLeadOption } from "../../../../features/leads/leadSlice"
+import axios from "../../../../utils/axios"
 const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
-    console.log("✅ LeadTourForm props:", { onComplete, leadData, isSubmitting });
+  console.log("✅ LeadTourForm props:", { onComplete, leadData, isSubmitting });
 
   const location = useLocation();
+  const dispatch = useDispatch();
+  const { options, loading: optionsLoading, error } = useSelector((state) => state.leads);
+
+
   const [openDialog, setOpenDialog] = React.useState(false);
   const [currentField, setCurrentField] = React.useState("");
   const [addMore, setNewItem] = React.useState("");
   const [customItems, setCustomItems] = React.useState({
     country: [],
-    destination: [],
+    tourDestination: [],
     services: [],
     arrivalCity: [],
     arrivalLocation: [],
@@ -49,6 +55,9 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
     message: "",
     severity: "success",
   });
+  useEffect(() => {
+    dispatch(getLeadOptions());
+  }, [dispatch]);
 
   // Get leadData from props or location state
   const initialData = leadData || location.state?.leadData || {};
@@ -57,7 +66,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
     initialValues: {
       tourType: "Domestic",
       country: "",
-      destination: "",
+      tourDestination: "",
       services: "",
       adults: "",
       children: "",
@@ -80,7 +89,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
       ...initialData,
     },
     validationSchema: Yup.object({
-      destination: Yup.string().required("Required"),
+      tourDestination: Yup.string().required("Required"),
       services: Yup.string().required("Required"),
       adults: Yup.number()
         .required("Required")
@@ -110,31 +119,81 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
       }),
     }),
     onSubmit: (values) => {
-  console.log("✅ Tour form submitted", values);
+      console.log("✅ Tour form submitted", values);
 
-  const formattedValues = {
-    ...values,
-    transport: values.transport === "Yes",
-    servicesRequired: [values.services],               // ✅ Fix 2
-    hotelType: [values.hotelType], 
-    arrivalDate: values.arrivalDate
-      ? dayjs(values.arrivalDate).format("YYYY-MM-DD")
-      : null,
-    departureDate: values.departureDate
-      ? dayjs(values.departureDate).format("YYYY-MM-DD")
-      : null,
-  };
+      const formattedValues = {
+        ...values,
+        transport: values.transport === "Yes",
+        servicesRequired: [values.services],               // ✅ Fix 2
+        hotelType: [values.hotelType],
+        arrivalDate: values.arrivalDate
+          ? dayjs(values.arrivalDate).format("YYYY-MM-DD")
+          : null,
+        departureDate: values.departureDate
+          ? dayjs(values.departureDate).format("YYYY-MM-DD")
+          : null,
+      };
 
-  if (typeof onComplete === "function") {
-    onComplete(formattedValues);
-  } else {
-    console.error("❌ onComplete is not a function");
-  }
-}
+      if (typeof onComplete === "function") {
+        onComplete(formattedValues);
+      } else {
+        console.error("❌ onComplete is not a function");
+      }
+    }
 
   });
 
   const { values, handleChange, setFieldValue, touched, errors } = formik;
+  const calculateAccommodation = async () => {
+    try {
+      const members = {
+        adults: values.adults,
+        children: values.children,
+        kidsWithoutMattress: values.kidsWithoutMattress,
+        infants: values.infants,
+      };
+
+      const accommodation = {
+        sharingType: values.sharingType,
+        noOfRooms: values.noOfRooms,
+      };
+
+      const { data } = await axios.post(
+        "/accommodation/calculate-accommodation",
+        { members, accommodation }
+      );
+
+      if (data.success) {
+        setFieldValue("noOfRooms", data.data.autoCalculatedRooms);
+        setFieldValue("noOfMattress", data.data.extraMattress);
+      }
+    } catch (error) {
+      console.error("Accommodation calculation failed:", error);
+    }
+  };
+  useEffect(() => {
+    if (values.sharingType && values.noOfRooms) {
+      calculateAccommodation();
+    }
+  }, [
+    values.sharingType,
+    values.noOfRooms,
+    values.adults,
+    values.children,
+    values.kidsWithoutMattress,
+    values.infants,
+  ]);
+  useEffect(() => {
+    if (values.arrivalDate && values.departureDate) {
+      const nights = dayjs(values.departureDate).diff(dayjs(values.arrivalDate), "day");
+
+      if (nights >= 0) {
+        setFieldValue("noOfNights", nights);
+      } else {
+        setFieldValue("noOfNights", 0);
+      }
+    }
+  }, [values.arrivalDate, values.departureDate, setFieldValue]);
 
   const handleOpenDialog = (fieldName) => {
     setCurrentField(fieldName);
@@ -146,46 +205,68 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
     setNewItem("");
   };
 
-  const handleAddNewItem = () => {
-    if (addMore.trim()) {
-      setCustomItems((prev) => ({
-        ...prev,
-        [currentField]: [...prev[currentField], addMore.trim()],
-      }));
-      setFieldValue(currentField, addMore.trim());
-      handleCloseDialog();
+  const handleAddNewItem = async () => {
+    if (!addMore.trim()) return;
+
+    try {
+      const newValue = addMore.trim();
+      const backendField = currentField; // use correct DB field
+
+      // Dispatch Redux thunk to save in DB + refresh options
+      await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
+
+      // Set the selected value instantly
+      setFieldValue(currentField, newValue);
+
+      // Show success message
       setSnackbar({
         open: true,
         message: `New ${currentField} added successfully`,
         severity: "success",
       });
+
+      handleCloseDialog();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to add new option",
+        severity: "error",
+      });
     }
   };
 
-  const getOptionsForField = (fieldName) => {
-    const defaultOptions = {
-      country: ["France", "USA", "Japan"],
-      destination: ["Delhi", "Paris"],
-      services: ["Hotel", "Transport"],
-      arrivalCity: ["Mumbai", "Delhi"],
-      arrivalLocation: ["Airport"],
-      departureCity: ["Delhi"],
-      departureLocation: ["Hotel"],
-      hotelType: ["3 Star", "5 Star"],
-      mealPlan: ["Breakfast"],
-      sharingType: ["Twin"],
-    };
 
-    const options = [
-      ...(defaultOptions[fieldName] || []),
-      ...(customItems[fieldName] || []),
-    ];
+
+
+  const fieldMapping = {
+    tourDestination: "tourtourDestination",
+    services: "servicesRequired",
+    hotelType: "hotelType",
+    mealPlan: "mealPlan",
+    sharingType: "sharingType",
+    arrivalCity: "arrivalCity",
+    arrivalLocation: "arrivalLocation",
+    departureCity: "departureCity",
+    departureLocation: "departureLocation",
+    country: "country",
+  };
+
+  const getOptionsForField = (fieldName) => {
+    const filteredOptions = options
+      ?.filter((opt) => opt.fieldName === fieldName)
+      .map((opt) => ({ value: opt.value, label: opt.value }));
 
     return [
-      ...options.map((option) => ({ value: option, label: option })),
+      ...(filteredOptions || []),
+      ...(customItems[fieldName] || []).map((opt) => ({
+        value: opt,
+        label: opt,
+      })),
       { value: "__add_new", label: "+ Add New" },
     ];
   };
+
+
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -237,8 +318,19 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
           <Typography variant="subtitle1" gutterBottom>
             Basic Tour Details
           </Typography>
+          {optionsLoading && (
+            <Box my={2} display="flex" justifyContent="center">
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {error && (
+            <Alert severity="error" sx={{ my: 2 }}>
+              Failed to load lead options: {error}
+            </Alert>
+          )}
           <Grid container spacing={2}>
-            <Grid size={{xs:12, md:6}}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl>
                 <FormLabel>Tour Type</FormLabel>
                 <RadioGroup
@@ -262,7 +354,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
             </Grid>
 
             {values.tourType === "International" && (
-              <Grid size={{xs:12, md:6}}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -292,23 +384,23 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </Grid>
             )}
 
-            <Grid size={{xs:12, md:6}}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 select
                 fullWidth
-                name="destination"
-                label="Tour Destination"
-                value={values.destination}
+                name="tourDestination"
+                label="Tour tourDestination"
+                value={values.tourDestination}
                 onChange={handleChange}
-                error={touched.destination && Boolean(errors.destination)}
-                helperText={touched.destination && errors.destination}
+                error={touched.tourDestination && Boolean(errors.tourDestination)}
+                helperText={touched.tourDestination && errors.tourDestination}
               >
-                {getOptionsForField("destination").map((option) =>
+                {getOptionsForField("tourDestination").map((option) =>
                   option.value === "__add_new" ? (
                     <MenuItem
-                      key="add-new-destination"
+                      key="add-new-tourDestination"
                       value=""
-                      onClick={() => handleOpenDialog("destination")}
+                      onClick={() => handleOpenDialog("tourDestination")}
                     >
                       + Add New
                     </MenuItem>
@@ -321,7 +413,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </TextField>
             </Grid>
 
-            <Grid size={{xs:12}}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 select
                 fullWidth
@@ -350,7 +442,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </TextField>
             </Grid>
 
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 name="adults"
@@ -362,7 +454,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 helperText={touched.adults && errors.adults}
               />
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 name="children"
@@ -374,7 +466,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 helperText={touched.children && errors.children}
               />
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 name="kidsWithoutMattress"
@@ -390,7 +482,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 }
               />
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 name="infants"
@@ -410,7 +502,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
             Pickup/Drop
           </Typography>
           <Grid container spacing={2}>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <DatePicker
                 label="Arrival Date *"
                 value={values.arrivalDate}
@@ -426,7 +518,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               />
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -454,7 +546,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -485,7 +577,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </TextField>
             </Grid>
 
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <DatePicker
                 label="Departure Date *"
                 value={values.departureDate}
@@ -503,7 +595,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               />
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -531,7 +623,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -571,7 +663,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
             Accommodation & Facility
           </Typography>
           <Grid container spacing={2}>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -599,7 +691,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -627,7 +719,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl>
                 <FormLabel>Transport</FormLabel>
                 <RadioGroup
@@ -645,7 +737,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 </RadioGroup>
               </FormControl>
             </Grid>
-            <Grid size={{xs:12, md:3}}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -673,7 +765,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{xs:4}}>
+            <Grid size={{ xs: 4 }}>
               <TextField
                 fullWidth
                 name="noOfRooms"
@@ -685,7 +777,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 helperText={touched.noOfRooms && errors.noOfRooms}
               />
             </Grid>
-            <Grid size={{xs:4}}>
+            <Grid size={{ xs: 4 }}>
               <TextField
                 fullWidth
                 name="noOfMattress"
@@ -697,17 +789,16 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 helperText={touched.noOfMattress && errors.noOfMattress}
               />
             </Grid>
-            <Grid size={{xs:4}}>
+            <Grid size={{ xs: 4 }}>
               <TextField
                 fullWidth
                 name="noOfNights"
                 label="No of Nights"
                 type="number"
                 value={values.noOfNights}
-                onChange={handleChange}
-                error={touched.noOfNights && Boolean(errors.noOfNights)}
-                helperText={touched.noOfNights && errors.noOfNights}
+                disabled
               />
+
             </Grid>
           </Grid>
         </Box>

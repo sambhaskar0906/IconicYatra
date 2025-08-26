@@ -8,7 +8,6 @@ const staffSchema = new mongoose.Schema({
             type:String,
             required:true
         },
-        
        
         mobileNumber:{
             type:String,

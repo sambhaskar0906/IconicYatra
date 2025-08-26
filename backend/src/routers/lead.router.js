@@ -1,5 +1,9 @@
-import {Router} from "express";
-import {createLead,viewAllLeads,updateLead,deleteLead,viewAllLeadsReports,viewByLeadId, changeLeadStatus} from "../controllers/lead.controller.js"
+import { Router } from "express";
+import {
+    createLead, viewAllLeads, updateLead, deleteLead, viewAllLeadsReports, viewByLeadId, changeLeadStatus,
+    getLeadOptions, addLeadOption
+} from "../controllers/lead.controller.js"
+import { sendLeadThankYou } from "../utils/leadEmail.js";
 
 
 const router = Router();
@@ -11,5 +15,11 @@ router.route("/viewLeadById/:leadId").get(viewByLeadId);
 router.route("/update-Lead/:leadId").put(updateLead);
 router.route("/delete-Lead/:leadId").delete(deleteLead);
 router.route("/change-status/:leadId").patch(changeLeadStatus)
+router.get("/options", getLeadOptions);
+
+router.post("/options/add", addLeadOption);
+
+router.post("/send-lead-email", sendLeadThankYou);
+
 
 export default router;

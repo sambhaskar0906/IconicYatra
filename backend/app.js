@@ -22,7 +22,7 @@ app.use(cors({
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
-app.use('/upload', express.static(path.join(__dirname, '/upload')));
+app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
 // Routes
 import leadRouter from "./src/routers/lead.router.js"
@@ -32,6 +32,14 @@ app.use('/api/v1/staff', staffRouter);
 
 import associateRouter from "./src/routers/associate.router.js"
 app.use('/api/v1/associate', associateRouter);
+
+import calcualteAccommodationRouter from "./src/routers/calculateAccommodation.router.js"
+app.use('/api/v1/accommodation', calcualteAccommodationRouter);
+
+import statesAndCitiesRouter from "./src/routers/stateAndCity.router.js";
+app.use("/api/v1/state", statesAndCitiesRouter);
+import locationRouter from "./src/routers/location.router.js";
+app.use("/api/v1/location", locationRouter);
 
 // ✅ Fix: Load JSON without import
 const swaggerDocument = JSON.parse(fs.readFileSync("./swagger-output.json", "utf-8"));

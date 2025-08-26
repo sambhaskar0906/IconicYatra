@@ -21,6 +21,7 @@
     "dayjs": "^1.11.13",
     "formik": "^2.4.6",
     "formik-mui": "^5.0.0-alpha.1",
+    "framer-motion": "^12.23.12",
     "html2pdf.js": "^0.10.3",
     "number-to-words": "^1.2.4",
     "quill": "^2.0.3",

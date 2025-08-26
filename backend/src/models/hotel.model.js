@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const hotelSchema = new mongoose.Schema({
+    hotelId: { type: String, unique: true },
     hotelName: { type: String, required: true },
     hotelType: {
         type: String,
@@ -41,23 +42,15 @@ const hotelSchema = new mongoose.Schema({
     mainImage: { type: String },
 
     location: {
+        country: { type: String, required: true },
         state: { type: String, required: true },
         city: { type: String, required: true },
         address1: { type: String },
-        address2: { type: String },
-        address3: { type: String },
         pincode: { type: String },
-        latitude: { type: Number },
-        longitude: { type: Number },
     },
 
     socialMedia: {
-        website: { type: String },
-        facebook: { type: String },
-        twitter: { type: String },
-        instagram: { type: String },
-        tripAdvisor: { type: String },
-        youtube: { type: String },
+        googleLink: { type: String },
     },
 
     rooms: [
@@ -72,6 +65,11 @@ const hotelSchema = new mongoose.Schema({
             roomDetails: [
                 {
                     roomType: {
+                        type: String,
+                        enum: ["Standard", "Deluxe", "Suite", "Family", "Dormitory"],
+                        required: true,
+                    },
+                    mealPlan: {
                         type: String,
                         enum: ["EP", "CP", "MAP", "AP"],
                         required: true,
@@ -96,8 +94,26 @@ const hotelSchema = new mongoose.Schema({
                     ],
                 },
             ],
+
         },
     ],
 });
+
+// 🔹 Auto-generate hotelId before saving
+hotelSchema.pre("save", async function (next) {
+    if (this.isNew) {
+        const lastHotel = await mongoose.model("Hotel").findOne().sort({ hotelId: -1 });
+
+        let nextNumber = 1;
+        if (lastHotel && lastHotel.hotelId) {
+            const lastNumber = parseInt(lastHotel.hotelId.replace("ICYR_HT", ""));
+            nextNumber = lastNumber + 1;
+        }
+
+        this.hotelId = `ICYR_HT${String(nextNumber).padStart(3, "0")}`;
+    }
+    next();
+});
+
 
 export default mongoose.model("Hotel", hotelSchema);
