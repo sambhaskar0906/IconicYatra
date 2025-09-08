@@ -22,6 +22,7 @@ import StaffForm from "../Pages/Admin/Staff/Form/StaffForm";
 import PaymentsCard from '../Pages/Admin/Payments/PaymentsCard';
 import PaymentsForm from '../Pages/Admin/Payments/Form/PaymentsForm';
 import InvoiceView from '../Components/InvoiceView';
+import MultiStepPackageForm from '../Pages/Admin/TourPackage/Form/MultiStepPackageForm';
 const MainRoute = () => {
     const isAuthenticated = true;
 
@@ -42,8 +43,8 @@ const MainRoute = () => {
 
                 {/* Package Routing */}
                 <Route path='/tourpackage' element={<PackageCard />} />
-                <Route path='/packageform' element={<PackageForm />} />
-                <Route path='/tourpackage/packageeditform' element={<PackageEditForm />} />
+                <Route path='/packageform' element={<MultiStepPackageForm />} />
+                <Route path='/tourpackage/packageeditform/:id' element={<PackageEditForm />} />
 
 
                 {/* Associates Route */}

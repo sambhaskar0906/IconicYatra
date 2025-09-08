@@ -37,7 +37,7 @@ const validationSchema = Yup.object({
   ifscCode: Yup.string(),
 });
 
-const StaffFirmForm = ({formik}) => {
+const StaffFirmForm = ({ formik }) => {
   const [firmTypes, setFirmTypes] = useState([
     "Proprietorship",
     "Partnership",

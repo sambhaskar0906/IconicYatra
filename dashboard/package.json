@@ -23,6 +23,7 @@
     "formik-mui": "^5.0.0-alpha.1",
     "framer-motion": "^12.23.12",
     "html2pdf.js": "^0.10.3",
+    "indian-cities-database": "^1.0.5",
     "number-to-words": "^1.2.4",
     "quill": "^2.0.3",
     "react": "^18.3.1",

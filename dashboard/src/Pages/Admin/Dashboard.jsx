@@ -31,12 +31,15 @@ const StatCard = ({ title, value, details, gradient }) => (
       color: "#fff",
       boxShadow: 4,
       transition: "transform 0.3s ease",
+      display: "flex",
+      flexDirection: "column",
+      height: "100%", // 👈 force equal height
       "&:hover": {
         transform: "translateY(-5px)",
       },
     }}
   >
-    <CardContent>
+    <CardContent sx={{ flex: 1 }}>
       <Typography fontWeight={700} fontSize="1.1rem" gutterBottom>
         {title}: {value}
       </Typography>
@@ -48,6 +51,7 @@ const StatCard = ({ title, value, details, gradient }) => (
     </CardContent>
   </Card>
 );
+
 
 const CalendarDashboard = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
@@ -96,16 +100,16 @@ const CalendarDashboard = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box p={3} sx={{ backgroundColor: "#f4f6f8", minHeight: "auto" }}>
-        <Grid container spacing={2} mb={4}>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <StatCard 
+        <Grid container spacing={2} mb={4} alignItems="stretch">
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} >
+            <StatCard
               title="Lead's Req"
               value={0}
               gradient="linear-gradient(135deg, #ff6a00, #ee0979)"
               details={["Active: 0", "Confirmed: 0", "Cancelled: 0"]}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard
               title="Quotation"
               value={0}
@@ -113,7 +117,7 @@ const CalendarDashboard = () => {
               details={["In Process: 0", "Confirmed: 0", "Cancelled: 0"]}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard
               title="Tour"
               value={0}
@@ -121,7 +125,7 @@ const CalendarDashboard = () => {
               details={["Active: 0", "Upcoming: 0", "Completed: 0"]}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard
               title="Invoice"
               value={0}

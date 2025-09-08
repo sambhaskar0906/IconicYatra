@@ -28,7 +28,7 @@ import dayjs from "dayjs";
 import AssociateDetailForm from "../../Associates/Form/AssociatesForm";
 import { fetchAllAssociates } from "../../../../features/associate/associateSlice";
 import { fetchAllStaff } from "../../../../features/staff/staffSlice"
-import { fetchStates, fetchCities, fetchCountries, fetchStatesByCountry, clearCities } from '../../../../features/location/locationSlice';
+import { fetchCountries, fetchStatesByCountry, fetchCitiesByState, clearStates, clearCities } from '../../../../features/location/locationSlice';
 
 import { useDispatch, useSelector } from "react-redux";
 
@@ -61,8 +61,7 @@ const LeadForm = ({ onSaveAndContinue }) => {
   );
   const {
     countries,
-    states,             // For India
-    internationalStates, // For selected country
+    states,
     cities,
     loading,
   } = useSelector((state) => state.location);
@@ -158,33 +157,31 @@ const LeadForm = ({ onSaveAndContinue }) => {
     dispatch(fetchCountries());
   }, [dispatch]);
 
-  // 🔹 Fetch states only if country is India
-  // If India → fetch Indian states → fetch cities
   useEffect(() => {
-    if (formik.values.country === "India") {
-      dispatch(fetchStates()); // ✅ India-specific states
-    } else if (formik.values.country) {
-      dispatch(fetchStatesByCountry(formik.values.country)); // ✅ States for selected country
+    if (formik.values.country) {
+      dispatch(fetchStatesByCountry(formik.values.country));
       formik.setFieldValue("state", "");
       formik.setFieldValue("city", "");
       dispatch(clearCities());
     } else {
-      formik.setFieldValue("state", "");
-      formik.setFieldValue("city", "");
+      dispatch(clearStates());
       dispatch(clearCities());
     }
   }, [formik.values.country, dispatch]);
 
-  // Fetch cities for India only
+  // Fetch cities when state changes
   useEffect(() => {
-    if (formik.values.country === "India" && formik.values.state) {
-      dispatch(fetchCities(formik.values.state));
+    if (formik.values.state && formik.values.country) {
+      dispatch(
+        fetchCitiesByState({
+          countryName: formik.values.country,
+          stateName: formik.values.state,
+        })
+      );
     } else {
-      formik.setFieldValue("city", "");
       dispatch(clearCities());
     }
-  }, [formik.values.country, formik.values.state, dispatch]);
-
+  }, [formik.values.state, formik.values.country, dispatch]);
 
   const handleAddNewValue = () => {
     if (newValue.trim() !== "") {
@@ -301,6 +298,9 @@ const LeadForm = ({ onSaveAndContinue }) => {
         </Typography>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            {renderSelectField("Title", "title", dropdownOptions.title)}
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             {renderTextField("Full Name *", "fullName")}
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -312,9 +312,7 @@ const LeadForm = ({ onSaveAndContinue }) => {
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             {renderTextField("Email *", "email", "email")}
           </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            {renderSelectField("Title", "title", dropdownOptions.title)}
-          </Grid>
+
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
@@ -345,81 +343,59 @@ const LeadForm = ({ onSaveAndContinue }) => {
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete
-              fullWidth
               options={
                 countries && countries.length > 0
-                  ? countries.map((c) => (typeof c === "string" ? c : c.name)) // handles both string & object
+                  ? countries.map((c) => c.name)
                   : ["Loading countries..."]
               }
-              value={formik.values.country || "India"} // ✅ Default India
-              onChange={(e, value) => {
-                formik.setFieldValue("country", value || "");
-              }}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Country"
-                  name="country"
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.country && Boolean(formik.errors.country)}
-                  helperText={formik.touched.country && formik.errors.country}
+                  fullWidth
                 />
               )}
+              value={formik.values.country || null}
+              onChange={(e, value) => formik.setFieldValue("country", value)}
             />
           </Grid>
-
-          {/* State */}
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete
-              fullWidth
               options={
-                formik.values.country === "India"
-                  ? states.map((s) => (typeof s === "string" ? s : s.name))
-                  : internationalStates.map((s) => (typeof s === "string" ? s : s.name))
+                states && states.length > 0
+                  ? states.map((s) => s.name) // ✅ Fetch full state names from API
+                  : ["No states available"]
               }
-              value={formik.values.state || ""}
-              onChange={(e, value) => {
-                formik.setFieldValue("state", value || "");
-              }}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="State"
-                  name="state"
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.state && Boolean(formik.errors.state)}
-                  helperText={formik.touched.state && formik.errors.state}
+                  fullWidth
                 />
               )}
+              value={formik.values.state || null}
+              onChange={(e, value) => formik.setFieldValue("state", value)}
             />
           </Grid>
 
-          {/* City */}
           <Grid size={{ xs: 12, sm: 4 }}>
             <Autocomplete
-              fullWidth
               options={
-                formik.values.country === "India"
-                  ? cities.map((c) => (typeof c === "string" ? c : c.name))
-                  : []
+                cities && cities.length > 0
+                  ? cities.map((c) => c.name) // ✅ Always fetch from API
+                  : ["No cities available"]
               }
-              value={formik.values.city || ""}
-              onChange={(e, value) => {
-                formik.setFieldValue("city", value || "");
-              }}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="City"
-                  name="city"
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.city && Boolean(formik.errors.city)}
-                  helperText={formik.touched.city && formik.errors.city}
+                  fullWidth
                 />
               )}
+              value={formik.values.city || null}
+              onChange={(e, value) => formik.setFieldValue("city", value)}
             />
           </Grid>
-
 
         </Grid>
       </Box>

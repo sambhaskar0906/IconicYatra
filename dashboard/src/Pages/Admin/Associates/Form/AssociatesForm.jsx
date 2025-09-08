@@ -18,7 +18,7 @@ import * as Yup from "yup";
 import dayjs from "dayjs";
 import AssociateFirmForm from "./AssociateFirmForm";
 import { useDispatch } from "react-redux";
-import {createAssociate} from "../../../../features/associate/associateSlice"
+import { createAssociate } from "../../../../features/associate/associateSlice"
 const titles = ["Mr", "Mrs", "Ms", "Dr"];
 const roles = ["B2B Vendor", "Hotel Vendor", "Referral Partner", "Staff", "Sub Agent", "Vehicle Vendor"];
 const countries = ["India", "USA"];
@@ -58,112 +58,112 @@ const AssociatesForm = () => {
   const dispatch = useDispatch();
 
 
-const handleFinalSubmit = (values) => {
-  const formattedData = {
-    personalDetails: {
-      fullName: `${values.fullName.split(" ")[0] || ""} ${values.fullName.split(" ").slice(1).join(" ") || ""}`.trim(),
-      mobileNumber: values.mobile,
-      alternateContact: values.alternateContact,
-      associateType: values.associateType,
-      email: values.email,
-      title: values.title,
-      dob: values.dob,
-    },
-    staffLocation: {  // Changed from associateLocation to staffLocation
-      country: values.country,
-      state: values.state,
-      city: values.city,
-    },
-    address: {
-      addressLine1: values.address1,
-      addressLine2: values.address2,
-      addressLine3: values.address3,
-      pincode: values.pincode,
-    },
-    firm: {
-      firmType: values.firmType,
-      gstIn: values.gstin,  // Changed from gstin to gstIn
-      cin: values.cin,
-      pan: values.pan,
-      existingTurnOver: values.turnover,  // Changed from turnover to existingTurnOver
-      firmName: values.firmName,
-      firmDescription: values.firmDescription,
-      sameAsContact: values.sameAsContact,
-      address1: values.firmAddress1,
-      address2: values.firmAddress2,
-      address3: values.firmAddress3,
-      supportingDocs: values.supportingDocs,
-    },
-    bank: {
-      bankName: values.bankName,
-      branchName: values.branchName,
-      nameOfBranch: values.nameOfBranch,
-      accountHolderName: values.accountHolderName,
-      accountNumber: values.accountNumber,
-      ifscCode: values.ifscCode,
-    },
+  const handleFinalSubmit = (values) => {
+    const formattedData = {
+      personalDetails: {
+        fullName: `${values.fullName.split(" ")[0] || ""} ${values.fullName.split(" ").slice(1).join(" ") || ""}`.trim(),
+        mobileNumber: values.mobile,
+        alternateContact: values.alternateContact,
+        associateType: values.associateType,
+        email: values.email,
+        title: values.title,
+        dob: values.dob,
+      },
+      staffLocation: {  // Changed from associateLocation to staffLocation
+        country: values.country,
+        state: values.state,
+        city: values.city,
+      },
+      address: {
+        addressLine1: values.address1,
+        addressLine2: values.address2,
+        addressLine3: values.address3,
+        pincode: values.pincode,
+      },
+      firm: {
+        firmType: values.firmType,
+        gstIn: values.gstin,  // Changed from gstin to gstIn
+        cin: values.cin,
+        pan: values.pan,
+        existingTurnOver: values.turnover,  // Changed from turnover to existingTurnOver
+        firmName: values.firmName,
+        firmDescription: values.firmDescription,
+        sameAsContact: values.sameAsContact,
+        address1: values.firmAddress1,
+        address2: values.firmAddress2,
+        address3: values.firmAddress3,
+        supportingDocs: values.supportingDocs,
+      },
+      bank: {
+        bankName: values.bankName,
+        branchName: values.branchName,
+        nameOfBranch: values.nameOfBranch,
+        accountHolderName: values.accountHolderName,
+        accountNumber: values.accountNumber,
+        ifscCode: values.ifscCode,
+      },
+    };
+
+    dispatch(createAssociate(formattedData))
+      .unwrap()
+      .then(() => {
+        navigate("/associates");
+      })
+      .catch((err) => {
+        console.error("Associates creation failed:", err);
+      });
   };
 
-  dispatch(createAssociate(formattedData))
-    .unwrap()
-    .then(() => {
-      navigate("/associates");
-    })
-    .catch((err) => {
-      console.error("Associates creation failed:", err);
-    });
-};
-
   const formik = useFormik({
-   initialValues: {
-  fullName: "",
-  mobile: "",
-  alternateContact: "",
-  associateType: "",
-  email: "",
-  title: "",
-  dob: null,
+    initialValues: {
+      fullName: "",
+      mobile: "",
+      alternateContact: "",
+      associateType: "",
+      email: "",
+      title: "",
+      dob: null,
 
-  // Associates Address
-  address1: "",
-  address2: "",
-  address3: "",
-  pincode: "",
-  country: "",
-  state: "",
-  city: "",
+      // Associates Address
+      address1: "",
+      address2: "",
+      address3: "",
+      pincode: "",
+      country: "",
+      state: "",
+      city: "",
 
-  // Firm
-  firmType: "",
-  gstin: "",
-  cin: "",
-  pan: "",
-  turnover: "",
-  firmName: "",
-  firmDescription: "",
-  sameAsContact: false,
-  supportingDocs: null,
-  firmAddress1: "",  // 👈 rename
-  firmAddress2: "",
-  firmAddress3: "",
+      // Firm
+      firmType: "",
+      gstin: "",
+      cin: "",
+      pan: "",
+      turnover: "",
+      firmName: "",
+      firmDescription: "",
+      sameAsContact: false,
+      supportingDocs: null,
+      firmAddress1: "",  // 👈 rename
+      firmAddress2: "",
+      firmAddress3: "",
 
-  // Bank
-  bankName: "",
-  branchName: "",
-  accountHolderName: "",
-  accountNumber: "",
-  ifscCode: "",
-  nameOfBranch: "",
-},
+      // Bank
+      bankName: "",
+      branchName: "",
+      accountHolderName: "",
+      accountNumber: "",
+      ifscCode: "",
+      nameOfBranch: "",
+    },
 
     validationSchema,
-onSubmit: (values) => {
-    if (step === 1) {
-      setStep(2);
-    } else {
-      handleFinalSubmit(values); // This will dispatch the action
+    onSubmit: (values) => {
+      if (step === 1) {
+        setStep(2);
+      } else {
+        handleFinalSubmit(values); // This will dispatch the action
+      }
     }
-  }
 
 
     ,
@@ -178,7 +178,7 @@ onSubmit: (values) => {
     setFieldValue,
     resetForm,
   } = formik;
- 
+
 
 
   return (
@@ -195,11 +195,12 @@ onSubmit: (values) => {
                 Associate's Personal Details
               </Typography>
               <Grid container spacing={2}>
-                 <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 3 }}>
                   <FormControl fullWidth>
                     <InputLabel>Title</InputLabel>
                     <Select
                       name="title"
+                      label="Title"
                       value={values.title}
                       onChange={handleChange}
                     >
@@ -223,7 +224,7 @@ onSubmit: (values) => {
                     helperText={touched.fullName && errors.fullName}
                   />
                 </Grid>
-               
+
                 <Grid size={{ xs: 3 }}>
                   <TextField
                     name="mobile"
@@ -244,7 +245,7 @@ onSubmit: (values) => {
                     onChange={handleChange}
                   />
                 </Grid>
-                
+
                 <Grid size={{ xs: 3 }}>
                   <FormControl
                     fullWidth
@@ -254,6 +255,7 @@ onSubmit: (values) => {
                     <InputLabel>Associate Type</InputLabel>
                     <Select
                       name="associateType"
+                      label="AssociateType"
                       value={values.associateType}
                       onChange={handleChange}
                     >
@@ -274,7 +276,7 @@ onSubmit: (values) => {
                     onChange={handleChange}
                   />
                 </Grid>
-               
+
                 <Grid size={{ xs: 3 }}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
@@ -300,6 +302,7 @@ onSubmit: (values) => {
                     <InputLabel>Country</InputLabel>
                     <Select
                       name="country"
+                      label="Country"
                       value={values.country}
                       onChange={(e) => {
                         handleChange(e);
@@ -320,6 +323,7 @@ onSubmit: (values) => {
                     <InputLabel>State</InputLabel>
                     <Select
                       name="state"
+                      label="State"
                       value={values.state}
                       onChange={(e) => {
                         handleChange(e);
@@ -340,6 +344,7 @@ onSubmit: (values) => {
                     <InputLabel>City</InputLabel>
                     <Select
                       name="city"
+                      label="City"
                       value={values.city}
                       onChange={handleChange}
                       disabled={!values.state}
@@ -406,24 +411,24 @@ onSubmit: (values) => {
           </>
         )}
 
-       {step === 2 && (
-  <>
-    <AssociateFirmForm formik={formik} />
+        {step === 2 && (
+          <>
+            <AssociateFirmForm formik={formik} />
 
-    <Box display="flex" gap={2} justifyContent="center" mt={3}>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={() => setStep(1)}
-      >
-        Back
-      </Button>
-      <Button type="submit" variant="contained" color="primary">
-        Submit Final
-      </Button>
-    </Box>
-  </>
-)}
+            <Box display="flex" gap={2} justifyContent="center" mt={3}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Submit Final
+              </Button>
+            </Box>
+          </>
+        )}
 
 
         <Box display="flex" gap={2} justifyContent="center" mt={3}>

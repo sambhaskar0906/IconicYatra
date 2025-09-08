@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
-  Grid,
   Radio,
   RadioGroup,
   FormControlLabel,
@@ -10,45 +9,91 @@ import {
   TextField,
   Button,
   Typography,
-  MenuItem,
+  Autocomplete,
+  IconButton,
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import HomeWorkIcon from "@mui/icons-material/HomeWork";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchCountries,
+  fetchStatesByCountry,
+  fetchCitiesByState,
+  clearStates,
+  clearCities,
+} from "../../../../features/location/locationSlice";
+import { getLeadOptions, addLeadOption } from "../../../../features/leads/leadSlice";
 
-const sectors = [
-  "Uttar Pradesh",
-  "Maharashtra",
-  "Kerala",
-  "Goa",
-  "Kashmir",
-  "Rajasthan",
-];
-const subTypes = ["Adventure", "Leisure", "Cultural"];
-const countries = ["Thailand", "France", "USA", "Japan", "Australia"];
-
-const PackageEntryForm = () => {
-  const [tourType, setTourType] = useState("Domestic");
+const PackageEntryForm = ({ onNext, initialData }) => {
+  const [tourType, setTourType] = useState(initialData?.tourType || "Domestic");
+  const [allCities, setAllCities] = useState([]);
   const [locationList, setLocationList] = useState([]);
-  const [stayLocationList, setStayLocationList] = useState([]);
+  const [stayLocationList, setStayLocationList] = useState(initialData?.stayLocations || []);
+  const [selectedCountry, setSelectedCountry] = useState(initialData?.destinationCountry || "");
+  const [searchText, setSearchText] = useState("");
+  const BOX_HEIGHT = 220;
+
+  // Dialog
+  const [openDialog, setOpenDialog] = useState(false);
+  const [currentField, setCurrentField] = useState("");
+  const [addMore, setAddMore] = useState("");
+
+  const dispatch = useDispatch();
+  const { countries, states } = useSelector((state) => state.location);
+  const { options } = useSelector((state) => state.leads);
+  const { loading } = useSelector((state) => state.packages);
+
+  useEffect(() => {
+    dispatch(fetchCountries());
+    dispatch(getLeadOptions());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (tourType === "Domestic") {
+      dispatch(fetchStatesByCountry("India"));
+    }
+  }, [tourType, dispatch]);
 
   const formik = useFormik({
     initialValues: {
-      tourType: "Domestic",
-      sector: "",
-      subType: "",
-      destinationCountry: "",
+      tourType: initialData?.tourType || "Domestic",
+      sector: initialData?.sector || "",
+      destinationCountry: initialData?.destinationCountry || "",
+      packageSubType: initialData?.packageSubType || [],
     },
     validationSchema: Yup.object({
-      sector: Yup.string().required("Sector is required"),
-      subType: Yup.string().required("Package Sub Type is required"),
+      tourType: Yup.string().required("Tour type is required"),
       destinationCountry: Yup.string().when("tourType", {
         is: "International",
-        then: Yup.string().required("Destination country is required"),
+        then: (schema) => schema.required("Destination country is required"),
+        otherwise: (schema) => schema.notRequired(),
       }),
+      sector: Yup.string().required("State is required"),
+      packageSubType: Yup.array()
+        .of(Yup.string())
+        .min(1, "At least one package sub type is required"),
     }),
     onSubmit: (values) => {
-      console.log("Form submitted:", values, stayLocationList);
+      if (stayLocationList.length === 0) {
+        alert("Please select at least one stay location.");
+        return;
+      }
+
+      // ✅ Pass correct payload to MultiStep form
+      const payload = {
+        ...values,
+        stayLocations: stayLocationList,
+      };
+
+      onNext(payload, stayLocationList);
     },
   });
 
@@ -56,84 +101,128 @@ const PackageEntryForm = () => {
     const selectedType = e.target.value;
     setTourType(selectedType);
 
-    // Reset all form fields and drag-drop lists
-    formik.setValues({
-      tourType: selectedType,
-      sector: "",
-      subType: "",
-      destinationCountry: "",
-    });
+    formik.setFieldValue("tourType", selectedType);
+    formik.setFieldValue("sector", "");
+    formik.setFieldValue("destinationCountry", "");
+    formik.setFieldValue("packageSubType", "");
+    formik.setTouched({});
+
+    setAllCities([]);
     setLocationList([]);
     setStayLocationList([]);
-  };
+    dispatch(clearStates());
+    dispatch(clearCities());
 
-  const handleSectorChange = (e) => {
-    const selectedSector = e.target.value;
-    formik.setFieldValue("sector", selectedSector);
-    if (tourType === "Domestic") {
-      setLocationList([
-        `${selectedSector} - City 1`,
-        `${selectedSector} - City 2`,
-        `${selectedSector} - City 3`,
-      ]);
-      setStayLocationList([]);
-    }
-  };
-
-  const handleDragEnd = (result) => {
-    const { source, destination } = result;
-
-    if (!destination) return;
-
-    if (source.droppableId === destination.droppableId) {
-      const items =
-        source.droppableId === "locationList"
-          ? Array.from(locationList)
-          : Array.from(stayLocationList);
-      const [movedItem] = items.splice(source.index, 1);
-      items.splice(destination.index, 0, movedItem);
-
-      if (source.droppableId === "locationList") {
-        setLocationList(items);
-      } else {
-        setStayLocationList(items);
-      }
+    if (selectedType === "Domestic") {
+      formik.setFieldValue("destinationCountry", "India");
+      setSelectedCountry("India");
+      dispatch(fetchStatesByCountry("India"));
     } else {
-      const sourceList =
-        source.droppableId === "locationList"
-          ? Array.from(locationList)
-          : Array.from(stayLocationList);
-      const destList =
-        destination.droppableId === "stayLocationList"
-          ? Array.from(stayLocationList)
-          : Array.from(locationList);
-      const [movedItem] = sourceList.splice(source.index, 1);
-      destList.splice(destination.index, 0, movedItem);
-
-      if (source.droppableId === "locationList") {
-        setLocationList(sourceList);
-        setStayLocationList(destList);
-      } else {
-        setStayLocationList(sourceList);
-        setLocationList(destList);
-      }
+      formik.setFieldValue("destinationCountry", "");
+      setSelectedCountry("");
     }
+  };
+
+  const handleCountryChange = (countryName) => {
+    setSelectedCountry(countryName);
+    formik.setFieldValue("destinationCountry", countryName);
+
+    dispatch(fetchStatesByCountry(countryName));
+    setAllCities([]);
+    setLocationList([]);
+    setStayLocationList([]);
+    dispatch(clearCities());
+  };
+
+  const handleSectorChange = (stateName) => {
+    formik.setFieldValue("sector", stateName);
+
+    dispatch(
+      fetchCitiesByState({
+        countryName: tourType === "Domestic" ? "India" : selectedCountry,
+        stateName,
+      })
+    )
+      .unwrap()
+      .then((cityList) => {
+        const cities = cityList.map((c) => c.name);
+        setAllCities(cities);
+        setLocationList(cities);
+        setStayLocationList([]);
+        setSearchText("");
+      });
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value.toLowerCase();
+    setSearchText(value);
+    if (!value) {
+      setLocationList(allCities);
+    } else {
+      setLocationList(allCities.filter((c) => c.toLowerCase().includes(value)));
+    }
+  };
+
+  const handleSelectCity = (city) => {
+    if (!stayLocationList.find((item) => item.city === city)) {
+      setStayLocationList([...stayLocationList, { city, nights: "" }]);
+    }
+  };
+
+  const handleRemoveCity = (city) => {
+    setStayLocationList(stayLocationList.filter((item) => item.city !== city));
+  };
+
+  // ===== Add New Option Logic =====
+  const handleOpenDialog = (field) => {
+    setCurrentField(field);
+    setAddMore("");
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleAddNewItem = async () => {
+    if (!addMore.trim()) return;
+
+    try {
+      const newValue = addMore.trim();
+      const backendField = currentField;
+
+      await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
+
+      formik.setFieldValue(backendField, newValue);
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Failed to add new option", error);
+    }
+  };
+
+  const getOptionsForField = (fieldName) => {
+    const filteredOptions = options
+      ?.filter((opt) => opt.fieldName === fieldName)
+      .map((opt) => ({ value: opt.value, label: opt.value }));
+
+    return [
+      ...(filteredOptions || []),
+      { value: "__add_new", label: "+ Add New" },
+    ];
   };
 
   return (
-    <Box border={1} borderColor="grey.300" borderRadius={1} p={2}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom>
+    <Box border={1} borderColor="grey.300" borderRadius={2} p={3} boxShadow={2}>
+      <Typography variant="h6" fontWeight="bold" gutterBottom mb={3} color="primary">
         Package Entry Form
-      </Typography>
-      <Typography variant="subtitle1" color="primary" gutterBottom>
-        Destination
       </Typography>
 
       <form onSubmit={formik.handleSubmit}>
         <Grid container spacing={2}>
-          <Grid size={{xs:12, sm:3}}>
+          {/* Tour Type */}
+          <Grid size={{ xs: 12, md: 3 }}>
             <FormControl component="fieldset" fullWidth>
-              <FormLabel component="legend">Tour Type</FormLabel>
+              <FormLabel>Tour Type</FormLabel>
               <RadioGroup
                 row
                 name="tourType"
@@ -146,183 +235,308 @@ const PackageEntryForm = () => {
             </FormControl>
           </Grid>
 
-          <Grid size={{xs:12, sm:3}}>
-            {tourType === "Domestic" ? (
-              <TextField
+          {/* Domestic Sector */}
+          {tourType === "Domestic" && (
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Autocomplete
                 fullWidth
-                select
-                label="Sector"
-                name="sector"
-                value={formik.values.sector}
-                onChange={handleSectorChange}
-                error={formik.touched.sector && Boolean(formik.errors.sector)}
-                helperText={formik.touched.sector && formik.errors.sector}
-              >
-                {sectors.map((sector) => (
-                  <MenuItem key={sector} value={sector}>
-                    {sector}
-                  </MenuItem>
-                ))}
-              </TextField>
-            ) : (
-              <TextField
-                fullWidth
-                label="Sector (Manual Input)"
-                name="sector"
-                value={formik.values.sector}
-                onChange={formik.handleChange}
-                error={formik.touched.sector && Boolean(formik.errors.sector)}
-                helperText={formik.touched.sector && formik.errors.sector}
+                options={states.map((state) => state.name)}
+                value={formik.values.sector || ""}
+                onChange={(e, newValue) => {
+                  formik.setFieldValue("sector", newValue || "");
+                  if (newValue) handleSectorChange(newValue);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Sector (State)"
+                    error={formik.touched.sector && Boolean(formik.errors.sector)}
+                    helperText={formik.touched.sector && formik.errors.sector}
+                  />
+                )}
               />
-            )}
-          </Grid>
-
-          <Grid size={{xs:12, sm:3}}>
-            <TextField
-              fullWidth
-              select
-              label="Package Sub Type"
-              name="subType"
-              value={formik.values.subType}
-              onChange={formik.handleChange}
-              error={formik.touched.subType && Boolean(formik.errors.subType)}
-              helperText={formik.touched.subType && formik.errors.subType}
-            >
-              {subTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          {tourType === "International" && (
-            <Grid size={{xs:12, sm:3}}>
-              <TextField
-                fullWidth
-                select
-                label="Destination Country"
-                name="destinationCountry"
-                value={formik.values.destinationCountry}
-                onChange={formik.handleChange}
-                error={formik.touched.destinationCountry && Boolean(formik.errors.destinationCountry)}
-                helperText={formik.touched.destinationCountry && formik.errors.destinationCountry}
-              >
-                {countries.map((country) => (
-                  <MenuItem key={country} value={country}>
-                    {country}
-                  </MenuItem>
-                ))}
-              </TextField>
             </Grid>
           )}
 
-          <Grid size={{xs:12}}>
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Grid container spacing={2}>
-                <Grid size={{xs:12, sm:6}}>
-                  <Typography variant="subtitle2" color="primary">
-                    Location
-                  </Typography>
-                  <Typography variant="caption" color="error">
-                    Drag & Drop to select city
-                  </Typography>
-                  <Droppable droppableId="locationList">
-                    {(provided) => (
-                      <Box
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        sx={{
-                          border: "1px solid #ccc",
-                          height: 200,
-                          overflowY: "auto",
-                          mt: 1,
-                          p: 1,
-                        }}
-                      >
-                        {locationList.map((city, index) => (
-                          <Draggable key={city} draggableId={city} index={index}>
-                            {(provided) => (
-                              <Box
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                sx={{
-                                  mb: 1,
-                                  p: 1,
-                                  bgcolor: "#f5f5f5",
-                                  borderRadius: 1,
-                                  cursor: "grab",
-                                }}
-                              >
-                                {city}
-                              </Box>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Box>
-                    )}
-                  </Droppable>
-                </Grid>
-
-                <Grid size={{xs:12, sm:6}}>
-                  <Typography variant="subtitle2" color="primary">
-                    Stay Location
-                  </Typography>
-                  <Typography variant="caption" color="error">
-                    Arrange Cities according to Itinerary Order
-                  </Typography>
-                  <Droppable droppableId="stayLocationList">
-                    {(provided) => (
-                      <Box
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        sx={{
-                          border: "1px solid #ccc",
-                          height: 200,
-                          overflowY: "auto",
-                          mt: 1,
-                          p: 1,
-                        }}
-                      >
-                        {stayLocationList.map((city, index) => (
-                          <Draggable key={city} draggableId={city} index={index}>
-                            {(provided) => (
-                              <Box
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                sx={{
-                                  mb: 1,
-                                  p: 1,
-                                  bgcolor: "#e8f4fd",
-                                  borderRadius: 1,
-                                  cursor: "grab",
-                                }}
-                              >
-                                {city}
-                              </Box>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Box>
-                    )}
-                  </Droppable>
-                </Grid>
+          {/* International */}
+          {tourType === "International" && (
+            <>
+              {/* Destination Country */}
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Autocomplete
+                  fullWidth
+                  options={countries.map((c) => c.name)}
+                  value={formik.values.destinationCountry || ""}
+                  onChange={(e, newValue) => {
+                    formik.setFieldValue("destinationCountry", newValue || "");
+                    if (newValue) {
+                      handleCountryChange(newValue);
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Destination Country"
+                      error={formik.touched.destinationCountry && Boolean(formik.errors.destinationCountry)}
+                      helperText={formik.touched.destinationCountry && formik.errors.destinationCountry}
+                    />
+                  )}
+                />
               </Grid>
-            </DragDropContext>
+
+              {/* State */}
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Autocomplete
+                  fullWidth
+                  options={states.map((s) => s.name)}
+                  value={formik.values.sector || ""}
+                  onChange={(e, newValue) => {
+                    formik.setFieldValue("sector", newValue || "");
+                    if (newValue) {
+                      handleSectorChange(newValue);
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="State"
+                      error={formik.touched.sector && Boolean(formik.errors.sector)}
+                      helperText={formik.touched.sector && formik.errors.sector}
+                    />
+                  )}
+                />
+              </Grid>
+            </>
+          )}
+
+          {/* Package Sub Type */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Autocomplete
+              multiple   // ✅ multiple enable
+              fullWidth
+              options={getOptionsForField("packageSubType").map((opt) => opt.value)}
+              value={formik.values.packageSubType || []}   // ✅ array use
+              onChange={(e, newValue) => {
+                if (newValue.includes("__add_new")) {
+                  // remove the "__add_new" from selected values
+                  const filtered = newValue.filter((v) => v !== "__add_new");
+                  formik.setFieldValue("packageSubType", filtered);
+                  handleOpenDialog("packageSubType");
+                } else {
+                  formik.setFieldValue("packageSubType", newValue);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Package Sub Type"
+                  error={formik.touched.packageSubType && Boolean(formik.errors.packageSubType)}
+                  helperText={formik.touched.packageSubType && formik.errors.packageSubType}
+                />
+              )}
+              renderOption={(props, option) => (
+                <li {...props} key={option}>
+                  {option === "__add_new" ? "+ Add New" : option}
+                </li>
+              )}
+            />
           </Grid>
 
-          <Grid size={{xs:12}} textAlign="center" mt={2}>
-            <Button type="submit" variant="contained" sx={{ bgcolor: "#4db9f3" }}>
-              Save & Continue
+          {/* Location List + Stay Locations */}
+          <Grid size={{ xs: 12 }} mt={2}>
+            <Grid container spacing={2}>
+              {/* Available Locations */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle1" sx={{ display: "flex", alignItems: "center", fontWeight: "bold" }} color="primary">
+                  <LocationOnIcon sx={{ mr: 1, color: "red" }} />
+                  Available Locations
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search city..."
+                  value={searchText}
+                  onChange={handleSearch}
+                  sx={{ mt: 1 }}
+                />
+                <Box
+                  sx={{
+                    border: "1px solid #ccc",
+                    height: BOX_HEIGHT,
+                    overflowY: "auto",
+                    mt: 1,
+                    p: 1,
+                    borderRadius: 2,
+                    background: "#fafafa",
+                  }}
+                >
+                  {locationList.map((city, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        p: 1,
+                        mb: 1,
+                        borderRadius: 1,
+                        background: "#f5f5f5",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        "&:hover": { background: "#e0f7fa" },
+                      }}
+                      onClick={() => handleSelectCity(city)}
+                    >
+                      <LocationOnIcon fontSize="small" sx={{ mr: 1, color: "grey.600" }} />
+                      {city}
+                    </Box>
+                  ))}
+                </Box>
+              </Grid>
+
+              {/* Stay Locations */}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ display: "flex", alignItems: "center", fontWeight: "bold" }}
+                  color="primary"
+                >
+                  <HomeWorkIcon sx={{ mr: 1, color: "#1976d2" }} />
+                  Stay Locations
+                </Typography>
+                <Box
+                  sx={{
+                    border: "1px solid #ccc",
+                    height: 270,
+                    overflowY: "auto",
+                    mt: 1,
+                    p: 1,
+                    borderRadius: 2,
+                    background: "#f0f8ff",
+                  }}
+                >
+                  {stayLocationList.map((item, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        p: 1,
+                        mb: 1,
+                        borderRadius: 1,
+                        background: "#e3f2fd",
+                        flexDirection: "column",
+                      }}
+                    >
+                      {/* City name + actions */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <HomeWorkIcon fontSize="small" sx={{ mr: 1, color: "#1976d2" }} />
+                          {item.city}
+                        </Box>
+
+                        <Box>
+                          {/* Move Up */}
+                          <IconButton
+                            size="small"
+                            disabled={i === 0}
+                            onClick={() => {
+                              if (i === 0) return;
+                              const newList = [...stayLocationList];
+                              const [moved] = newList.splice(i, 1);
+                              newList.splice(i - 1, 0, moved);
+                              setStayLocationList(newList);
+                            }}
+                          >
+                            ⬆️
+                          </IconButton>
+
+                          {/* Move Down */}
+                          <IconButton
+                            size="small"
+                            disabled={i === stayLocationList.length - 1}
+                            onClick={() => {
+                              if (i === stayLocationList.length - 1) return;
+                              const newList = [...stayLocationList];
+                              const [moved] = newList.splice(i, 1);
+                              newList.splice(i + 1, 0, moved);
+                              setStayLocationList(newList);
+                            }}
+                          >
+                            ⬇️
+                          </IconButton>
+
+                          {/* Delete */}
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleRemoveCity(item.city)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+
+                      {/* Nights field */}
+                      <TextField
+                        type="number"
+                        size="small"
+                        label="Number of Nights"
+                        value={item.nights}
+                        onChange={(e) => {
+                          const newList = [...stayLocationList];
+                          newList[i].nights = e.target.value;
+                          setStayLocationList(newList);
+                        }}
+                        sx={{ mt: 1, width: "50%" }}
+                        inputProps={{ min: 1 }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </Grid>
+            </Grid>
+          </Grid>
+
+          {/* Submit */}
+          <Grid size={{ xs: 12 }} textAlign="center" mt={3}>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ bgcolor: "#4db9f3", px: 4 }}
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save & Continue"}
             </Button>
           </Grid>
         </Grid>
-      </form>
-    </Box>
+      </form >
+
+      {/* Add New Dialog */}
+      <Dialog Dialog open={openDialog} onClose={handleCloseDialog} >
+        <DialogTitle>Add New {currentField}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            autoFocus
+            margin="dense"
+            label={`New ${currentField}`}
+            value={addMore}
+            onChange={(e) => setAddMore(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleAddNewItem} variant="contained">Add</Button>
+        </DialogActions>
+      </Dialog>
+    </Box >
   );
 };
 

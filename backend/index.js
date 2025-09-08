@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import connectDB from "./src/db/index.js"
-import {app} from "./app.js"
+import { app } from "./app.js"
 dotenv.config({
     path: './.env'
 })
 
 app.get('/', (req, res) => {
-    res.send('Welcome to the SK SAHU JAIN APi!');
+    res.send('Welcome to the Iconic Yatra API!');
 });
 connectDB()
     .then(() => {
@@ -15,5 +15,5 @@ connectDB()
         })
     })
     .catch((err) => {
-        console.log("Server failed",err);
+        console.log("Server failed", err);
     })

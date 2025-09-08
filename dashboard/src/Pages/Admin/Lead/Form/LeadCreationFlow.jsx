@@ -4,7 +4,7 @@ import LeadTourForm from "./LeadTourForm"
 import { useNavigate } from "react-router-dom";
 import { createLead } from "../../../../features/leads/leadSlice";
 import { Snackbar, Alert } from "@mui/material";
-import {useDispatch,useSelector} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 const LeadCreationFlow = () => {
   const [step, setStep] = useState(1);
   const [leadData, setLeadData] = useState(null);
@@ -25,7 +25,7 @@ const LeadCreationFlow = () => {
   const handleComplete = async (tourData) => {
     try {
       setIsSubmitting(true);
-      
+
       // Combine data from both forms
       const completeLeadData = {
         ...leadData,
@@ -34,13 +34,13 @@ const LeadCreationFlow = () => {
 
       // Call the API
       const response = await dispatch(createLead(completeLeadData)).unwrap();
-      
+
       setNotification({
         open: true,
         message: "Lead created successfully!",
         severity: "success",
       });
-      
+
       // Redirect to leads list after 2 seconds
       setTimeout(() => navigate("/lead"), 2000);
     } catch (error) {
@@ -61,13 +61,13 @@ const LeadCreationFlow = () => {
   return (
     <div>
       {step === 1 && <LeadForm onSaveAndContinue={handleSaveAndContinue} />}
-     {step === 2 && leadData && (
-  <LeadTourForm
-    leadData={leadData}
-    onComplete={handleComplete}
-    isSubmitting={isSubmitting}
-  />
-)}
+      {step === 2 && leadData && (
+        <LeadTourForm
+          leadData={leadData}
+          onComplete={handleComplete}
+          isSubmitting={isSubmitting}
+        />
+      )}
 
 
       <Snackbar

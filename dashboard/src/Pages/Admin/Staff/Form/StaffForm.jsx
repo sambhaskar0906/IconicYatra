@@ -56,172 +56,173 @@ const validationSchema = Yup.object().shape({
 const StaffForm = () => {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
- const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
-const handleFinalSubmit = () => {
-  const formattedData = {
-    personalDetails: {
-      title: values.title,
-      firstName: values.fullName.split(" ")[0] || "",
-      lastName: values.fullName.split(" ").slice(1).join(" ") || "",
-      mobileNumber: values.mobile,
-      alternateContact: values.alternateContact,
-      designation: values.designation,
-      userRole: values.userRole,
-      email: values.email,
-      dob: values.dob,
-    },
-    staffLocation: {
-      country: values.country,
-      state: values.state,
-      city: values.city,
-    },
-    address: {
-      address1: values.address1,
-      address2: values.address2,
-      address3: values.address3,
-      pincode: values.pincode,
-    },
-    firm: {
-  firmType: values.firmType,
-  gstin: values.gstin,
-  cin: values.cin,
-  pan: values.pan,
-  turnover: values.turnover,
-  firmName: values.firmName,
-  firmDescription: values.firmDescription,
-  sameAsContact: values.sameAsContact,
-  address1: values.firmAddress1,
-  address2: values.firmAddress2,
-  address3: values.firmAddress3,
-  supportingDocs: values.supportingDocs,
-},
+  // const handleFinalSubmit = () => {
+  //   const formattedData = {
+  //     personalDetails: {
+  //       title: values.title,
+  //       firstName: values.fullName.split(" ")[0] || "",
+  //       lastName: values.fullName.split(" ").slice(1).join(" ") || "",
+  //       mobileNumber: values.mobile,
+  //       alternateContact: values.alternateContact,
+  //       designation: values.designation,
+  //       userRole: values.userRole,
+  //       email: values.email,
+  //       dob: values.dob,
+  //     },
+  //     staffLocation: {
+  //       country: values.country,
+  //       state: values.state,
+  //       city: values.city,
+  //     },
+  //     address: {
+  //       address1: values.address1,
+  //       address2: values.address2,
+  //       address3: values.address3,
+  //       pincode: values.pincode,
+  //     },
+  //     firm: {
+  //       firmType: values.firmType,
+  //       gstin: values.gstin,
+  //       cin: values.cin,
+  //       pan: values.pan,
+  //       turnover: values.turnover,
+  //       firmName: values.firmName,
+  //       firmDescription: values.firmDescription,
+  //       sameAsContact: values.sameAsContact,
+  //       address1: values.firmAddress1,
+  //       address2: values.firmAddress2,
+  //       address3: values.firmAddress3,
+  //       supportingDocs: values.supportingDocs,
+  //     },
 
-    bank: {
- bankName: values.bankName,
-  branchName: values.branchName,
-  //nameOfBranch: values.nameOfBranch,
-  accountHolderName: values.accountHolderName,
-  accountNumber: values.accountNumber,
-  ifscCode: values.ifscCode,
-}
+  //     bank: {
+  //       bankName: values.bankName,
+  //       branchName: values.branchName,
+  //       //nameOfBranch: values.nameOfBranch,
+  //       accountHolderName: values.accountHolderName,
+  //       accountNumber: values.accountNumber,
+  //       ifscCode: values.ifscCode,
+  //     }
 
-  };
+  //   };
 
-  dispatch(createStaff(formattedData))
-    .unwrap()
-    .then(() => {
-      navigate("/staff"); // or wherever you want
-    })
-    .catch((err) => {
-      console.error("Staff creation failed:", err);
-    });
-};
+  //   dispatch(createStaff(formattedData))
+  //     .unwrap()
+  //     .then(() => {
+  //       navigate("/staff"); // or wherever you want
+  //     })
+  //     .catch((err) => {
+  //       console.error("Staff creation failed:", err);
+  //     });
+  // };
+
   const formik = useFormik({
-   initialValues: {
-  fullName: "",
-  mobile: "",
-  alternateContact: "",
-  designation: "",
-  userRole: "",
-  email: "",
-  title: "",
-  dob: null,
+    initialValues: {
+      fullName: "",
+      mobile: "",
+      alternateContact: "",
+      designation: "",
+      userRole: "",
+      email: "",
+      title: "",
+      dob: null,
 
-  // Staff Address
-  address1: "",
-  address2: "",
-  address3: "",
-  pincode: "",
-  country: "",
-  state: "",
-  city: "",
+      // Staff Address
+      address1: "",
+      address2: "",
+      address3: "",
+      pincode: "",
+      country: "",
+      state: "",
+      city: "",
 
-  // Firm
-  firmType: "",
-  gstin: "",
-  cin: "",
-  pan: "",
-  turnover: "",
-  firmName: "",
-  firmDescription: "",
-  sameAsContact: false,
-  supportingDocs: null,
-  firmAddress1: "",  // 👈 rename
-  firmAddress2: "",
-  firmAddress3: "",
+      // Firm
+      firmType: "",
+      gstin: "",
+      cin: "",
+      pan: "",
+      turnover: "",
+      firmName: "",
+      firmDescription: "",
+      sameAsContact: false,
+      supportingDocs: null,
+      firmAddress1: "",  // 👈 rename
+      firmAddress2: "",
+      firmAddress3: "",
 
-  // Bank
-  bankName: "",
-  branchName: "",
-  accountHolderName: "",
-  accountNumber: "",
-  ifscCode: "",
-  nameOfBranch: "",
-},
+      // Bank
+      bankName: "",
+      branchName: "",
+      accountHolderName: "",
+      accountNumber: "",
+      ifscCode: "",
+      nameOfBranch: "",
+    },
 
     validationSchema,
- onSubmit: (values) => {
-  if (step === 1) {
-    setStep(2);
-  } else {
-    const formattedData = {
-      personalDetails: {
-        fullName: values.fullName,
-        title: values.title,
-        firstName: values.fullName.split(" ")[0] || "",
-        lastName: values.fullName.split(" ").slice(1).join(" ") || "",
-        mobileNumber: values.mobile,
-        alternateContact: values.alternateContact,
-        designation: values.designation,
-        userRole: values.userRole,
-        email: values.email,
-        dob: values.dob,
-      },
-      staffLocation: {
-        country: values.country,
-        state: values.state,
-        city: values.city,
-      },
-      address: {
-        addressLine1: values.address1,
-        addressLine2: values.address2,
-        addressLine3: values.address3,
-        pincode: values.pincode,
-      },
-      firm: {
-        firmType: values.firmType,
-        gstin: values.gstin,
-        cin: values.cin,
-        pan: values.pan,
-        turnover: values.turnover,
-        firmName: values.firmName,
-        firmDescription: values.firmDescription,
-        sameAsContact: values.sameAsContact,
-        address1: values.address1,
-        address2: values.address2,
-        address3: values.address3,
-        supportingDocs: values.supportingDocs,
-      },
-      bank: {
-        bankName: values.bankName,
-        branchName: values.branchName,
-        accountHolderName: values.accountHolderName,
-        accountNumber: values.accountNumber,
-        ifscCode: values.ifscCode,
-      },
-    };
+    onSubmit: (values) => {
+      if (step === 1) {
+        setStep(2);
+      } else {
+        const formattedData = {
+          personalDetails: {
+            fullName: values.fullName,
+            title: values.title,
+            firstName: values.fullName.split(" ")[0] || "",
+            lastName: values.fullName.split(" ").slice(1).join(" ") || "",
+            mobileNumber: values.mobile,
+            alternateContact: values.alternateContact,
+            designation: values.designation,
+            userRole: values.userRole,
+            email: values.email,
+            dob: values.dob,
+          },
+          staffLocation: {
+            country: values.country,
+            state: values.state,
+            city: values.city,
+          },
+          address: {
+            addressLine1: values.address1,
+            addressLine2: values.address2,
+            addressLine3: values.address3,
+            pincode: values.pincode,
+          },
+          firm: {
+            firmType: values.firmType,
+            gstin: values.gstin,
+            cin: values.cin,
+            pan: values.pan,
+            turnover: values.turnover,
+            firmName: values.firmName,
+            firmDescription: values.firmDescription,
+            sameAsContact: values.sameAsContact,
+            address1: values.address1,
+            address2: values.address2,
+            address3: values.address3,
+            supportingDocs: values.supportingDocs,
+          },
+          bank: {
+            bankName: values.bankName,
+            branchName: values.branchName,
+            accountHolderName: values.accountHolderName,
+            accountNumber: values.accountNumber,
+            ifscCode: values.ifscCode,
+          },
+        };
 
-    dispatch(createStaff(formattedData))
-      .unwrap()
-      .then(() => {
-        navigate("/staff");
-      })
-      .catch((err) => {
-        console.error("Staff creation failed:", err);
-      });
-  }
-}
+        dispatch(createStaff(formattedData))
+          .unwrap()
+          .then(() => {
+            navigate("/staff");
+          })
+          .catch((err) => {
+            console.error("Staff creation failed:", err);
+          });
+      }
+    }
 
 
     ,
@@ -236,7 +237,7 @@ const handleFinalSubmit = () => {
     setFieldValue,
     resetForm,
   } = formik;
- 
+
 
 
   return (
@@ -253,7 +254,7 @@ const handleFinalSubmit = () => {
                 Staff's Personal Details
               </Typography>
               <Grid container spacing={2}>
-                 <Grid size={{ xs: 3 }}>
+                <Grid size={{ xs: 3 }}>
                   <FormControl fullWidth>
                     <InputLabel>Title</InputLabel>
                     <Select
@@ -281,7 +282,7 @@ const handleFinalSubmit = () => {
                     helperText={touched.fullName && errors.fullName}
                   />
                 </Grid>
-               
+
                 <Grid size={{ xs: 3 }}>
                   <TextField
                     name="mobile"
@@ -343,7 +344,7 @@ const handleFinalSubmit = () => {
                     onChange={handleChange}
                   />
                 </Grid>
-               
+
                 <Grid size={{ xs: 3 }}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
@@ -475,24 +476,24 @@ const handleFinalSubmit = () => {
           </>
         )}
 
-       {step === 2 && (
-  <>
-    <StaffFormDetail formik={formik} />
+        {step === 2 && (
+          <>
+            <StaffFormDetail formik={formik} />
 
-    <Box display="flex" gap={2} justifyContent="center" mt={3}>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={() => setStep(1)}
-      >
-        Back
-      </Button>
-      <Button type="submit" variant="contained" color="primary">
-        Submit Final
-      </Button>
-    </Box>
-  </>
-)}
+            <Box display="flex" gap={2} justifyContent="center" mt={3}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Submit Final
+              </Button>
+            </Box>
+          </>
+        )}
 
 
         <Box display="flex" gap={2} justifyContent="center" mt={3}>

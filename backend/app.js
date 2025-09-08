@@ -25,6 +25,9 @@ app.use(cookieParser());
 app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
 // Routes
+import cityRoutes from "./src/routers/city.router.js";
+app.use("/api/v1/cities", cityRoutes);
+
 import leadRouter from "./src/routers/lead.router.js"
 app.use('/api/v1/lead', leadRouter);
 import staffRouter from "./src/routers/staff.router.js"
@@ -40,7 +43,12 @@ import statesAndCitiesRouter from "./src/routers/stateAndCity.router.js";
 app.use("/api/v1/state", statesAndCitiesRouter);
 import locationRouter from "./src/routers/location.router.js";
 app.use("/api/v1/location", locationRouter);
-
+import allCountryStatesAndCity from "./src/routers/allCountryStatesAndCity.router.js";
+app.use("/api/v1/countryStateAndCity", allCountryStatesAndCity);
+import packageRoutes from './src/routers/package.routes.js'
+app.use("/api/v1/packages", packageRoutes)
+import dayRoutes from "./src/routers/day.routes.js";
+app.use("api/v1/days", dayRoutes)
 // ✅ Fix: Load JSON without import
 const swaggerDocument = JSON.parse(fs.readFileSync("./swagger-output.json", "utf-8"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

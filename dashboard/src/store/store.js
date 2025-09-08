@@ -4,6 +4,8 @@ import StaffReducer from "../features/staff/staffSlice"
 import AssociateReducer from "../features/associate/associateSlice"
 import hotelReducer from "../features/hotel/hotelSlice";
 import locationReducer from "../features/location/locationSlice"
+import packageReducer from "../features/package/packageSlice";
+import cityReducer from "../features/allcities/citySlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +14,8 @@ export const store = configureStore({
     associate: AssociateReducer,
     hotel: hotelReducer,
     location: locationReducer,
+    packages: packageReducer,
+    cities: cityReducer,
   },
 });
 

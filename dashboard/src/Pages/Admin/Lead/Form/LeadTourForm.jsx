@@ -236,8 +236,6 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
   };
 
 
-
-
   const fieldMapping = {
     tourDestination: "tourtourDestination",
     services: "servicesRequired",
@@ -502,23 +500,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
             Pickup/Drop
           </Typography>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <DatePicker
-                label="Arrival Date *"
-                value={values.arrivalDate}
-                onChange={(val) => setFieldValue("arrivalDate", val)}
-                minDate={dayjs()}
-                renderInput={(params) => (
-                  <TextField
-                    fullWidth
-                    {...params}
-                    error={touched.arrivalDate && Boolean(errors.arrivalDate)}
-                    helperText={touched.arrivalDate && errors.arrivalDate}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 select
                 fullWidth
@@ -546,7 +528,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 select
                 fullWidth
@@ -576,26 +558,24 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <DatePicker
-                label="Departure Date *"
-                value={values.departureDate}
-                onChange={(val) => setFieldValue("departureDate", val)}
-                minDate={values.arrivalDate || dayjs()}
+                label="Arrival Date *"
+                value={values.arrivalDate}
+                onChange={(val) => setFieldValue("arrivalDate", val)}
+                minDate={dayjs()}
                 renderInput={(params) => (
                   <TextField
                     fullWidth
                     {...params}
-                    error={
-                      touched.departureDate && Boolean(errors.departureDate)
-                    }
-                    helperText={touched.departureDate && errors.departureDate}
+                    error={touched.arrivalDate && Boolean(errors.arrivalDate)}
+                    helperText={touched.arrivalDate && errors.arrivalDate}
                   />
                 )}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 select
                 fullWidth
@@ -623,7 +603,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 select
                 fullWidth
@@ -654,6 +634,24 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                   )
                 )}
               </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <DatePicker
+                label="Departure Date *"
+                value={values.departureDate}
+                onChange={(val) => setFieldValue("departureDate", val)}
+                minDate={values.arrivalDate || dayjs()}
+                renderInput={(params) => (
+                  <TextField
+                    fullWidth
+                    {...params}
+                    error={
+                      touched.departureDate && Boolean(errors.departureDate)
+                    }
+                    helperText={touched.departureDate && errors.departureDate}
+                  />
+                )}
+              />
             </Grid>
           </Grid>
         </Box>

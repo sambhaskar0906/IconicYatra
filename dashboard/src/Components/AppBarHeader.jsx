@@ -26,7 +26,7 @@ const DashboardHeader = () => {
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
   const location = useLocation();
 
-  
+
   const pageTitles = {
     "/": "Dashboard",
     "/lead": "Leads Manager",
@@ -55,7 +55,7 @@ const DashboardHeader = () => {
           py: isMobile ? 1 : 0,
         }}
       >
-      
+
         <Box
           sx={{
             display: "flex",
