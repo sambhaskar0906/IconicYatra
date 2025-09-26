@@ -25,6 +25,10 @@ app.use(cookieParser());
 app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
 // Routes
+import authRoutes from "./src/routers/user.router.js";
+app.use("/api/v1/user", authRoutes);
+
+
 import cityRoutes from "./src/routers/city.router.js";
 app.use("/api/v1/cities", cityRoutes);
 
@@ -48,7 +52,14 @@ app.use("/api/v1/countryStateAndCity", allCountryStatesAndCity);
 import packageRoutes from './src/routers/package.routes.js'
 app.use("/api/v1/packages", packageRoutes)
 import dayRoutes from "./src/routers/day.routes.js";
-app.use("api/v1/days", dayRoutes)
+app.use("api/v1/days", dayRoutes);
+// flight Quotation
+import FlightQuotationRouter from "./src/routers/quotation/flightQuotation.router.js";
+app.use("/api/v1/flightQT", FlightQuotationRouter);
+
+// vehicle Quotation
+import vehicleQuotationRouter from "./src/routers/quotation/vehicleQuotation.router.js";
+app.use("/api/v1/vehicleQT", vehicleQuotationRouter);
 // ✅ Fix: Load JSON without import
 const swaggerDocument = JSON.parse(fs.readFileSync("./swagger-output.json", "utf-8"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -59,5 +70,6 @@ app.use('/api/v1/slip', slipRouter);
 // hotel route
 import hotelRoutes from "./src/routers/hotel.router.js";
 app.use("/api/v1", hotelRoutes);
+
 
 export { app };

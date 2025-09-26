@@ -3,15 +3,12 @@ import mongoose from "mongoose";
 const hotelSchema = new mongoose.Schema({
     hotelId: { type: String, unique: true },
     hotelName: { type: String, required: true },
-    hotelType: {
-        type: String,
-        enum: ["Resort", "Villa", "Boutique", "Business", "Budget", "Luxury"],
-        required: true,
-    },
+    hotelType: { type: [String], required: true },
     status: {
         type: String,
         enum: ["Active", "Inactive"],
         default: "Active",
+        set: (v) => v?.charAt(0).toUpperCase() + v?.slice(1).toLowerCase(),
     },
     contactDetails: {
         email: { type: String, required: true },
@@ -21,26 +18,11 @@ const hotelSchema = new mongoose.Schema({
         contactPerson: { type: String },
     },
     description: { type: String },
-    cancellationPolicy: {
-        type: String,
-        enum: ["Non-refundable", "24hrs Free", "48hrs Free", "Flexible"],
-    },
+    cancellationPolicy: { type: String, },
     facilities: [
-        {
-            type: String,
-            enum: [
-                "Wifi",
-                "Parking",
-                "Pool",
-                "Restaurant",
-                "Spa",
-                "Gym",
-                "Airport Pickup",
-            ],
-        },
+        { type: String, required: true },
     ],
     mainImage: { type: String },
-
     location: {
         country: { type: String, required: true },
         state: { type: String, required: true },
@@ -57,7 +39,7 @@ const hotelSchema = new mongoose.Schema({
         {
             seasonType: {
                 type: String,
-                enum: ["Peak", "Off-Season", "Festival", "Weekend"],
+                required: true,
             },
             validFrom: { type: Date },
             validTill: { type: Date },
@@ -65,8 +47,7 @@ const hotelSchema = new mongoose.Schema({
             roomDetails: [
                 {
                     roomType: {
-                        type: String,
-                        enum: ["Standard", "Deluxe", "Suite", "Family", "Dormitory"],
+                        type: [String],
                         required: true,
                     },
                     mealPlan: {

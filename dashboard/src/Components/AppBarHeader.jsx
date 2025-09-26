@@ -1,31 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AppBar,
   Box,
   Toolbar,
   IconButton,
   Typography,
-  Badge,
   Avatar,
   Stack,
+  Menu,
+  MenuItem,
+  Divider,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import {
   ChevronLeft,
-  LocalOffer,
   Notifications,
   CalendarToday,
-  Storage,
+  Lock,
+  Logout,
+  Edit,
 } from "@mui/icons-material";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const DashboardHeader = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // ✅ Redux user state (profileSlice se)
+  const { user } = useSelector((state) => state.profile);
+
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const pageTitles = {
     "/": "Dashboard",
@@ -43,29 +52,28 @@ const DashboardHeader = () => {
 
   const title = pageTitles[location.pathname] || "Page";
 
+  const handleProfileClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
   return (
     <AppBar position="static" color="inherit" elevation={1}>
       <Toolbar
         sx={{
           display: "flex",
           flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "stretch" : "center",
+          alignItems: "center",
           justifyContent: "space-between",
           gap: isMobile ? 1 : 0,
           py: isMobile ? 1 : 0,
         }}
       >
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: isMobile ? "space-between" : "flex-start",
-            width: isMobile ? "100%" : "auto",
-            gap: 2,
-            order: isMobile ? 1 : 0,
-          }}
-        >
+        {/* Left Section */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <IconButton
             sx={{
               bgcolor: "primary.main",
@@ -82,84 +90,170 @@ const DashboardHeader = () => {
           </Typography>
         </Box>
 
-        {/* Center Logo - Hidden on mobile */}
+        {/* Center Logo */}
         {!isMobile && (
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: "flex",
-              justifyContent: "center",
-              order: isTablet ? 2 : 1,
-            }}
-          >
+          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
             <Avatar
               variant="square"
               src="https://iconicyatra.com/assets/img/logo.png"
-              sx={{
-                width: isTablet ? 120 : 140,
-                height: isTablet ? 30 : 40,
-                mx: "auto",
-              }}
+              sx={{ width: isTablet ? 120 : 140, height: isTablet ? 30 : 40 }}
               alt="IconicYatra Logo"
             />
           </Box>
         )}
 
-        {/* Right Section: Icons + Company Name */}
+        {/* Right Section: Notifications + Profile */}
         <Stack
           direction="row"
-          spacing={isMobile ? 1 : 2}
+          spacing={2}
           alignItems="center"
-          justifyContent={isMobile ? "space-between" : "flex-end"}
-          sx={{
-            width: isMobile ? "100%" : "auto",
-            order: isMobile ? 2 : 2,
-          }}
+          justifyContent="flex-end"
         >
-          <IconButton size={isMobile ? "small" : "medium"}>
-            <Badge badgeContent={0} color="success">
-              <LocalOffer fontSize={isMobile ? "small" : "medium"} />
-            </Badge>
+          <IconButton>
+            <Notifications />
           </IconButton>
-          <IconButton size={isMobile ? "small" : "medium"}>
-            <Notifications fontSize={isMobile ? "small" : "medium"} />
+          <IconButton>
+            <CalendarToday />
           </IconButton>
-          <IconButton size={isMobile ? "small" : "medium"}>
-            <CalendarToday fontSize={isMobile ? "small" : "medium"} />
-          </IconButton>
-          <IconButton size={isMobile ? "small" : "medium"}>
-            <Storage fontSize={isMobile ? "small" : "medium"} />
-          </IconButton>
-          {!isMobile && (
-            <Box textAlign="right" ml={1}>
-              <Typography fontWeight={600} color="primary" variant="body1">
-                Iconic Yatra
-              </Typography>
-              <Typography variant="body2" fontStyle="italic" color="orange">
-                Company
-              </Typography>
-            </Box>
-          )}
-        </Stack>
 
-        {/* Bottom Logo for Mobile */}
-        {isMobile && (
-          <Box
-            sx={{
-              textAlign: "center",
-              mt: 1,
-              order: 3,
-              width: "100%",
+          {/* Profile Section */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            onClick={handleProfileClick}
+            sx={{ cursor: "pointer" }}
+          >
+            <Typography fontWeight={600} color="primary">
+              {user?.fullName || "Admin"}
+            </Typography>
+            <Avatar
+              src={user?.profileImg || ""}
+              alt={user?.fullName || "Admin"}
+              sx={{
+                width: 36,
+                height: 36,
+                border: "2px solid #1976d2",
+              }}
+            />
+          </Stack>
+
+          {/* Profile Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            PaperProps={{
+              sx: {
+                borderRadius: 3,
+                boxShadow: 4,
+                minWidth: 300,
+                overflow: "visible",
+                p: 0,
+                animation: "fadeIn 0.2s ease-out",
+                "@keyframes fadeIn": {
+                  from: { opacity: 0, transform: "translateY(-10px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
+                "&::before": {
+                  content: '""',
+                  display: "block",
+                  position: "absolute",
+                  top: 0,
+                  right: 20,
+                  width: 12,
+                  height: 12,
+                  bgcolor: "background.paper",
+                  transform: "translateY(-50%) rotate(45deg)",
+                  zIndex: 0,
+                },
+              },
             }}
           >
-            <Avatar
-              variant="square"
-              src="https://iconicyatra.com/assets/img/logo.png"
-              sx={{ width: 120, height: 30, mx: "auto" }}
-              alt="IconicYatra Logo"
-            />
-          </Box>
-        )}
+            {/* Header */}
+            <Box
+              sx={{ p: 2, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar
+                  src={user?.profileImg || ""}
+                  alt={user?.fullName || "Admin"}
+                  sx={{ width: 50, height: 50, border: "2px solid #1976d2" }}
+                />
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {user?.fullName}
+                  </Typography>
+                  <Typography variant="caption">
+                    {user?.userRole || "Admin"}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+
+            {/* User Info */}
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>User ID:</strong> {user?.userId}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Email:</strong> {user?.email}
+              </Typography>
+
+              <Divider sx={{ my: 1 }} />
+
+              {/* Edit Profile */}
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate("/profile/edit");
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: "#f0f0f0" },
+                  borderRadius: 1,
+                }}
+              >
+                <Edit sx={{ mr: 1, color: "#1976d2" }} />
+                Edit Profile
+              </MenuItem>
+
+              {/* Change Password */}
+              <MenuItem
+                onClick={() => {
+                  handleClose();
+                  navigate("/change-password");
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: "#f0f0f0" },
+                  borderRadius: 1,
+                }}
+              >
+                <Lock sx={{ mr: 1, color: "#1976d2" }} />
+                Change Password
+              </MenuItem>
+
+              {/* Logout */}
+              <MenuItem
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.href = "http://localhost:5173/login"; //https://iconicyatra.com/login
+                }}
+                sx={{
+                  "&:hover": {
+                    background: "linear-gradient(90deg, #f44336, #d32f2f)",
+                    color: "white",
+                  },
+                  borderRadius: 1,
+                  mt: 1,
+                  fontWeight: "bold",
+                }}
+              >
+                <Logout sx={{ mr: 1 }} />
+                Logout
+              </MenuItem>
+            </Box>
+          </Menu>
+        </Stack>
       </Toolbar>
     </AppBar>
   );
