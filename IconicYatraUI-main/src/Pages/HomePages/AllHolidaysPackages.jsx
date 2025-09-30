@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Typography, Grid, Box, Divider } from '@mui/material';
 import PackageCard from '../../Components/PackageCard';
+import InquiryFormDialog from '../../Components/InquiryFormDialog';
 
 const packages = [
   { id: '1', dpkg: '101', title: 'Europe', image: 'https://www.travserver.com/travelingfuns/uploads/packages/pkg_408/pkg_408_main.png?1751611781411' },
@@ -22,6 +23,24 @@ const packages = [
 ];
 
 const AllHolidaysPackages = () => {
+  const [openInquiry, setOpenInquiry] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState("");
+
+  const handlePackageClick = (id, dpkg) => {
+    window.location.href = `/package-details?id=${id}&Dpkg=${dpkg}`;
+  };
+
+  const handleSendQuery = (destination) => {
+    setSelectedDestination(destination);
+    setOpenInquiry(true);
+  };
+
+  const handleInquirySubmit = (formData) => {
+    console.log("Inquiry submitted:", formData);
+    // API call here
+    setOpenInquiry(false);
+  };
+
   return (
     <Box sx={{ px: 2, width: '100%' }}>
       {/* Title */}
@@ -32,16 +51,29 @@ const AllHolidaysPackages = () => {
         <Divider sx={{ mt: 1, borderColor: '#ccc', borderBottomWidth: 5 }} />
       </Box>
 
-      {/* Show all packages */}
+      {/* Packages Grid */}
       <Grid container spacing={3} sx={{ textAlign: 'center', justifyContent: 'center' }}>
         {packages.map((pkg, index) => (
           <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index} sx={{ display: 'flex', justifyContent: 'center' }}>
             <Box sx={{ width: '100%', maxWidth: 320, margin: '13px' }}>
-              <PackageCard {...pkg} />
+              <PackageCard
+                {...pkg}
+                onClick={() => handlePackageClick(pkg.id, pkg.dpkg)}
+                onQueryClick={() => handleSendQuery(pkg.title)}
+              />
             </Box>
           </Grid>
         ))}
       </Grid>
+
+      {/* Inquiry Form Modal */}
+      <InquiryFormDialog
+        open={openInquiry}
+        handleClose={() => setOpenInquiry(false)}
+        onSubmit={handleInquirySubmit}
+        defaultDestination={selectedDestination}
+        title="Inquiry for Package"
+      />
     </Box>
   );
 };

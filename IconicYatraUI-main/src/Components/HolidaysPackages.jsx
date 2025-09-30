@@ -1,3 +1,4 @@
+// src/pages/HolidaysPackages.jsx
 import React from 'react';
 import {
   Typography,
@@ -6,29 +7,17 @@ import {
   Divider,
   Button,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import PackageCard from '../Components/PackageCard';
-import img1 from "../assets/packageimg/internationalPackage1.png";
-import img2 from "../assets/packageimg/internationalPackage2.jpg"
-import img3 from "../assets/packageimg/internationalPackage3.png"
-import img4 from "../assets/packageimg/internationalPackage4.png"
-import img5 from "../assets/packageimg/internationalPackage5.png"
-import img6 from "../assets/packageimg/internationalPackage6.png"
-import img7 from "../assets/packageimg/internationalPackage4.png"
-import img8 from "../assets/packageimg/internationalPackage1.png"
-
-const packages = [
-  { id: '1', dpkg: '101', title: 'Europe', image: img1 },
-  { id: '2', dpkg: '102', title: 'Thailand', image: img2},
-  { id: '3', dpkg: '103', title: 'Singapore', image: img3 },
-  { id: '4', dpkg: '104', title: 'Singapore', image: img4 },
-  { id: '5', dpkg: '105', title: 'Baku', image: img5 },
-  { id: '6', dpkg: '106', title: 'Baku', image: img6 },
-  { id: '7', dpkg: '107', title: 'LADAKH', image: img7 },
-  { id: '8', dpkg: '108', title: 'Europe', image: img8 },
-];
+import allInternationalPackageData from '../Data/International/packageData';
 
 const HolidaysPackages = () => {
+  const navigate = useNavigate();
+
+  const handleCardClick = (packageId) => {
+    navigate(`/internationalpackage/${packageId}`); // Navigate to detail page
+  };
+
   return (
     <Box sx={{ px: { xs: 2, md: 5 }, py: 6, width: '100%', background: '#fafafa' }}>
       {/* Title */}
@@ -65,10 +54,10 @@ const HolidaysPackages = () => {
 
       {/* Cards Grid */}
       <Grid container spacing={4} justifyContent="center">
-        {packages.slice(0, 8).map((pkg, index) => (
+        {allInternationalPackageData.slice(0, 8).map((pkg) => (
           <Grid
             size={{ xs: 12, sm: 6, md: 3 }}
-            key={index}
+            key={pkg.id}
             sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
           >
             <Box
@@ -80,13 +69,21 @@ const HolidaysPackages = () => {
                 boxShadow: '0px 6px 16px rgba(0,0,0,0.12)',
                 transition: 'transform 0.4s ease, box-shadow 0.4s ease',
                 position: 'relative',
+                cursor: 'pointer',
                 '&:hover': {
                   transform: 'translateY(-10px) scale(1.05)',
                   boxShadow: '0px 12px 24px rgba(0,0,0,0.2)',
                 },
               }}
+              onClick={() => handleCardClick(pkg.id)}
             >
-              <PackageCard {...pkg} />
+              <PackageCard
+                id={pkg.id}
+                title={pkg.title}
+                image={pkg.headerImage}
+                nights={pkg.nights}
+                sightseeing={pkg.sightseeing}
+              />
             </Box>
           </Grid>
         ))}

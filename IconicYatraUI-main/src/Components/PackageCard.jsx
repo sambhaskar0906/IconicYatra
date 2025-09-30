@@ -11,16 +11,26 @@ import {
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 
-const PackageCard = ({ image, title, onClick }) => {
+const PackageCard = ({ image, title, onClick, onQueryClick }) => {
   return (
     <Card sx={{ width: 308, borderRadius: 2, boxShadow: 10, backgroundPosition: 'center' }}>
       <CardActionArea
-        onClick={onClick}
+        onClick={onClick} // Card click
         sx={{ position: 'relative' }}
       >
         <CardMedia component="img" height="260" image={image} alt={title} />
+
+        {/* Send Query button */}
         <Box sx={{ position: 'absolute', bottom: 8, right: 8 }}>
-          <Button variant="contained" size="small" sx={{ textTransform: 'none' }}>
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ textTransform: 'none' }}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click
+              onQueryClick(); // Trigger query
+            }}
+          >
             Send Query
           </Button>
         </Box>
@@ -28,22 +38,26 @@ const PackageCard = ({ image, title, onClick }) => {
 
       <CardContent
         sx={{
-          backgroundColor: '#222',
           display: 'flex',
           alignItems: 'center',
-          color: '#fff',
+          color: '#000',
         }}
       >
         <LocationOnIcon fontSize="small" sx={{ mr: 0.5 }} />
-        <Typography variant="body2">
+        <Typography variant="body2" fontWeight="bold" color="#000">
           {title}
         </Typography>
+
       </CardContent>
     </Card>
   );
 };
 
-
-
+PackageCard.propTypes = {
+  image: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  onClick: PropTypes.func,
+  onQueryClick: PropTypes.func,
+};
 
 export default PackageCard;

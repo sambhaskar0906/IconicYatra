@@ -162,23 +162,28 @@ export default function TestimonialsPage() {
       {/* Hero Section */}
       <Box
         sx={{
-          background: `linear-gradient(135deg, ${alpha(
-            theme.palette.primary.main,
-            0.8
-          )} 0%, ${alpha(
-            theme.palette.secondary.main,
-            0.8
-          )} 100%), url(${testimonialBanner})`,
-
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          color: "white",
+          position: "relative",
           py: 12,
           textAlign: "center",
-          position: "relative",
+          color: "#fff",
+          background: `url(${testimonialBanner}) center/cover no-repeat`,
         }}
       >
-        <Container maxWidth="lg">
+        {/* Overlay */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)", // Simple black overlay at 50% opacity
+            zIndex: 1,
+          }}
+        />
+
+        {/* Content */}
+        <Container sx={{ position: "relative", zIndex: 2 }}>
           <Typography
             variant="h2"
             fontWeight="bold"
@@ -190,12 +195,15 @@ export default function TestimonialsPage() {
           >
             Traveler Stories
           </Typography>
-          <Typography variant="h5" sx={{ maxWidth: 800, mx: "auto", mb: 4 }}>
-            Discover why thousands of travelers trust Iconic Yatra to create
-            their perfect journeys
+          <Typography
+            variant="h5"
+            sx={{ maxWidth: 800, mx: "auto", mb: 4 }}
+          >
+            Discover why thousands of travelers trust Iconic Yatra to create their perfect journeys
           </Typography>
         </Container>
       </Box>
+
 
       {/* Stats Section */}
       <Container sx={{ py: 8 }}>

@@ -25,11 +25,6 @@ import {
   fetchLeadsReports,
   changeLeadStatus,
 } from "../../../features/leads/leadSlice";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DoneAllIcon from "@mui/icons-material/DoneAll";
-import CancelIcon from "@mui/icons-material/Cancel";
-import { ListItemIcon, ListItemText } from "@mui/material";
-
 
 const stats = [
   { title: "Today's", active: 0, confirmed: 0, cancelled: 0 },
@@ -38,6 +33,8 @@ const stats = [
   { title: "Last 6 Months", active: 0, confirmed: 0, cancelled: 0 },
   { title: "Last 12 Months", active: 15, confirmed: 0, cancelled: 0 },
 ];
+
+
 
 const LeadCard = () => {
   const navigate = useNavigate();
@@ -103,14 +100,6 @@ const LeadCard = () => {
     handleMenuClose(rowId);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const d = new Date(dateString);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
 
   const mappedLeads = leadList.map((lead, index) => ({
     id: index + 1,
@@ -121,8 +110,7 @@ const LeadCard = () => {
     mobile: lead.personalDetails?.mobile || "-",
     email: lead.personalDetails?.emailId || "-",
     destination: lead.location?.city || "-",
-    arrivalDate: formatDate(lead.tourDetails?.pickupDrop?.arrivalDate),
-    departureDate: formatDate(lead.tourDetails?.pickupDrop?.departureDate),
+    arrivalDate: lead.arrivalDate || "-",
     priority: lead.officialDetail?.priority || "-",
     assignTo:
       lead.officialDetail?.assignedTo ||
@@ -132,18 +120,17 @@ const LeadCard = () => {
   }));
 
   const columns = [
-    { field: "id", headerName: "Sr No.", width: 60, headerClassName: "bold-header" },
-    { field: "leadId", headerName: "Lead Id", width: 100, headerClassName: "bold-header" },
-    { field: "status", headerName: "Status", width: 100, headerClassName: "bold-header" },
-    { field: "source", headerName: "Source", width: 80, headerClassName: "bold-header" },
-    { field: "name", headerName: "Name", width: 150, headerClassName: "bold-header" },
-    { field: "mobile", headerName: "Mobile", width: 100, headerClassName: "bold-header" },
-    { field: "email", headerName: "Email", width: 150, headerClassName: "bold-header" },
-    { field: "destination", headerName: "Destination", width: 100, headerClassName: "bold-header" },
-    { field: "arrivalDate", headerName: "Arrival Date", width: 100, headerClassName: "bold-header" },
-    { field: "departureDate", headerName: "Departure Date", width: 120, headerClassName: "bold-header" },
-    { field: "priority", headerName: "Priority", width: 80, headerClassName: "bold-header" },
-    { field: "assignTo", headerName: "Assign To", width: 100, headerClassName: "bold-header" },
+    { field: "id", headerName: "Sr No.", width: 60 },
+    { field: "leadId", headerName: "Lead Id", width: 100 },
+    { field: "status", headerName: "Status", width: 100 },
+    { field: "source", headerName: "Source", width: 80 },
+    { field: "name", headerName: "Name", width: 150 },
+    { field: "mobile", headerName: "Mobile", width: 100 },
+    { field: "email", headerName: "Email", width: 150 },
+    { field: "destination", headerName: "Destination", width: 100 },
+    { field: "arrivalDate", headerName: "Arrival Date", width: 100 },
+    { field: "priority", headerName: "Priority", width: 80 },
+    { field: "assignTo", headerName: "Assign To", width: 100 },
     {
       field: "action",
       headerName: "Action",
@@ -173,43 +160,15 @@ const LeadCard = () => {
               anchorEl={anchorEls[rowId]}
               open={Boolean(anchorEls[rowId])}
               onClose={() => handleMenuClose(rowId)}
-              PaperProps={{
-                elevation: 4,
-                sx: {
-                  borderRadius: 2,
-                  minWidth: 180,
-                  "& .MuiMenuItem-root": {
-                    gap: 1,
-                    px: 2,
-                    py: 1,
-                    transition: "all 0.2s",
-                    "&:hover": {
-                      backgroundColor: "rgba(0,0,0,0.05)",
-                      transform: "scale(1.02)",
-                    },
-                  },
-                },
-              }}
             >
               <MenuItem onClick={() => handleStatusChange(rowId, "Active")}>
-                <ListItemIcon>
-                  <CheckCircleIcon color="success" fontSize="small" />
-                </ListItemIcon>
-                <ListItemText primary="Active" />
+                Active
               </MenuItem>
-
               <MenuItem onClick={() => handleStatusChange(rowId, "Confirmed")}>
-                <ListItemIcon>
-                  <DoneAllIcon color="primary" fontSize="small" />
-                </ListItemIcon>
-                <ListItemText primary="Confirm" />
+                Confirm
               </MenuItem>
-
               <MenuItem onClick={() => handleStatusChange(rowId, "Cancelled")}>
-                <ListItemIcon>
-                  <CancelIcon color="error" fontSize="small" />
-                </ListItemIcon>
-                <ListItemText primary="Cancel" />
+                Cancel
               </MenuItem>
             </Menu>
           </Box>
@@ -295,11 +254,6 @@ const LeadCard = () => {
               rowsPerPageOptions={[7, 25, 50, 100]}
               autoHeight
               disableRowSelectionOnClick
-              sx={{
-                "& .MuiDataGrid-columnHeaderTitle": {
-                  fontWeight: "bold",
-                },
-              }}
             />
           </Box>
         </Box>

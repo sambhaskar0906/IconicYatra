@@ -37,6 +37,8 @@ import TermConditions from '../Components/Term&Conditions';
 import CancellationPolicy from '../Components/CancelationPolicy';
 import PrivacyPolicy from '../Components/PrivacyPolicy';
 import LoginPage from '../Pages/HeaderPages/Login';
+import LatestBlog from '../Components/LatestBlog';
+import SpecialPackageDetail from '../Components/SpecialPackageDetail';
 
 const MainRoutes = () => {
   return (
@@ -84,6 +86,10 @@ const MainRoutes = () => {
       <Route path="/terms-conditions" element={<Layout><TermConditions /></Layout>} />
       <Route path="/cancellationandrefundpolicy" element={<Layout><CancellationPolicy /></Layout>} />
       <Route path="/privacypolicy" element={<Layout><PrivacyPolicy /></Layout>} />
+
+      <Route path="/latestblogs" element={<Layout><LatestBlog /></Layout>} />
+
+      <Route path="/special-package-details/:packageId" element={<Layout><SpecialPackageDetail /></Layout>} />
 
       {/* 404 route - should be last */}
       <Route path="*" element={<Layout><div>Page Not Found</div></Layout>} />

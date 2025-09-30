@@ -18,9 +18,9 @@ import * as Yup from "yup";
 import dayjs from "dayjs";
 import StaffFormDetail from "./StaffFormDetail";
 import { useDispatch } from "react-redux";
-import { createStaff } from "../../../../features/staff/staffSlice" // Adjust path
+import { createStaff } from "../../../../features/staff/staffSlice"
 const titles = ["Mr", "Mrs", "Ms", "Dr"];
-const roles = ["Admin", "Manager", "Executive"];
+const roles = ["Admin", "Superadmin", "Executive"];
 const countries = ["India", "USA"];
 const states = {
   India: ["Maharashtra", "Delhi", "Karnataka"],

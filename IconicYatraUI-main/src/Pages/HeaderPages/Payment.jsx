@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -24,13 +24,18 @@ import {
   Download,
   Share,
 } from "@mui/icons-material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PhonePay from "../../assets/packageimg/QR1.png";
 import GPay from "../../assets/packageimg/QR2.png";
+import RazorpayButton from "../../RazorPay/PaymentButton";
+
 
 const PaymentOption = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [copiedField, setCopiedField] = useState(null);
+
 
   const bankDetails = [
     {
@@ -196,7 +201,7 @@ const PaymentOption = () => {
                 {/* Bank Details Cards */}
                 <Grid container spacing={3}>
                   {bankDetails.map((bank, index) => (
-                    <Grid size={{ xs: 12, sm: 6 }} key={index}>
+                    <Grid size={{ xs: 12, md: 6 }} key={index}>
                       <Paper
                         elevation={2}
                         sx={{
@@ -220,33 +225,81 @@ const PaymentOption = () => {
                             mb: 2,
                           }}
                         />
-                        {Object.entries(bank.details).map(([key, value]) => (
-                          <Box key={key} sx={{ mb: 1.5 }}>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontWeight: "bold",
-                                color: "text.secondary",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {key.replace(/([A-Z])/g, " $1")}:
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontWeight: "bold", // This makes the details bold
-                                color: "text.primary",
-                              }}
-                            >
-                              {value}
-                            </Typography>
-                          </Box>
-                        ))}
+
+                        {Object.entries(bank.details).map(([key, value]) => {
+                          const isAccountOrIFSC =
+                            key.toLowerCase().includes("account") ||
+                            key.toLowerCase().includes("ifsc");
+
+                          return (
+                            <Box key={key} sx={{ mb: 1.5 }}>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: "bold",
+                                  color: "text.secondary",
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {key.replace(/([A-Z])/g, " $1")}:
+                              </Typography>
+
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  mt: 0.5,
+                                }}
+                              >
+                                <Typography
+                                  variant="body1"
+                                  sx={{
+                                    fontWeight: isAccountOrIFSC ? "bold" : "normal",
+                                    fontSize: isAccountOrIFSC ? "1.1rem" : "1rem",
+                                  }}
+                                >
+                                  {value}
+                                </Typography>
+
+                                {isAccountOrIFSC && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                      minWidth: "24px",
+                                      p: "2px",
+                                      borderRadius: "50%",
+                                      borderColor: bank.color,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                    }}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(value);
+                                      setCopiedField(`${bank.bank}_${key}`);
+                                      setTimeout(() => setCopiedField(null), 1500);
+                                    }}
+                                  >
+                                    {copiedField === `${bank.bank}_${key}` ? (
+                                      <Typography sx={{ fontSize: "0.8rem", color: "green" }}>
+                                        Copied!
+                                      </Typography>
+                                    ) : (
+                                      <ContentCopyIcon sx={{ fontSize: "16px" }} />
+                                    )}
+                                  </Button>
+                                )}
+
+                              </Box>
+                            </Box>
+                          );
+                        })}
                       </Paper>
                     </Grid>
                   ))}
                 </Grid>
+
               </Box>
 
               <Divider sx={{ my: 4 }} />
@@ -280,31 +333,15 @@ const PaymentOption = () => {
                     extra charges apply for card payments.
                   </Typography>
 
-                  <Button
-                    variant="contained"
-                    href="https://rzp.io/l/Gn0nwLEnCL"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                      background:
-                        "linear-gradient(45deg, #ff9800 30%, #ff5722 90%)",
-                      borderRadius: 2,
-                      px: 4,
-                      py: 1,
-                      fontWeight: "bold",
-                      textTransform: "none",
-                      fontSize: "1.1rem",
-                      boxShadow: 3,
-                      "&:hover": {
-                        boxShadow: 6,
-                        transform: "translateY(-1px)",
-                      },
-                    }}
-                  >
-                    💳 Pay with Card
-                  </Button>
+                  {/* Razorpay Payment Button */}
+                  <RazorpayButton
+                    onBack={() => console.log("Back clicked")}
+                    onNext={() => console.log("Payment successful! Proceed to next step")}
+                  />
+
                 </Paper>
               </Box>
+
 
               <Divider sx={{ my: 4 }} />
 

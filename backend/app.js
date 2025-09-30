@@ -28,6 +28,8 @@ app.use('/upload', express.static(path.join(__dirname, 'upload')));
 import authRoutes from "./src/routers/user.router.js";
 app.use("/api/v1/user", authRoutes);
 
+import paymentRoutes from "./src/routers/payment.js";
+app.use("/api/payment", paymentRoutes);
 
 import cityRoutes from "./src/routers/city.router.js";
 app.use("/api/v1/cities", cityRoutes);
@@ -70,6 +72,10 @@ app.use('/api/v1/slip', slipRouter);
 // hotel route
 import hotelRoutes from "./src/routers/hotel.router.js";
 app.use("/api/v1", hotelRoutes);
+
+import inquiryRoutes from "./src/routers/inquiry.router.js";
+app.use("/api/v1", inquiryRoutes);
+
 
 
 export { app };

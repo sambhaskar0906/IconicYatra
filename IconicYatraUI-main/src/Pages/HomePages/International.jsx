@@ -34,8 +34,8 @@ const International = () => {
     selectedDestination === "All"
       ? allInternationalPackageData
       : allInternationalPackageData.filter(
-          (pkg) => pkg.title.toLowerCase() === selectedDestination.toLowerCase()
-        );
+        (pkg) => pkg.title.toLowerCase() === selectedDestination.toLowerCase()
+      );
 
   // ✅ Updated navigation
   const handleCardClick = (packageId) => {
@@ -79,7 +79,16 @@ const International = () => {
         {filteredPackages.length > 0 ? (
           <Grid container spacing={3} justifyContent="center">
             {filteredPackages.map((pkg) => (
-              <Grid item key={pkg.id} xs={12} sm={6} md={4} lg={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={pkg.id}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-8px)",
+                    boxShadow: "0 12px 20px rgba(0,0,0,0.2)",
+                  },
+                }}>
                 <PackageCard
                   image={pkg.headerImage}
                   title={pkg.title}

@@ -78,20 +78,20 @@ const allInternationalPackageData = [
     nights: "3 N Bangkok, 3 N Phuket",
     headerImage: thailandHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Bangkok", 
-        image: thailand1, 
-        description: "Arrive at Bangkok airport, transfer to hotel. Evening visit to Asiatique The Riverfront." 
+      {
+        day: "Day 1 : Arrival Bangkok",
+        image: thailand1,
+        description: "Day 1: Arrival in Bangkok Arrive in Bangkok and transfer to your hotel. Relax and unwind after your journey. In the evening, explore the bustling streets or enjoy a peaceful dinner cruise along the Chao Phraya River."
       },
-      { 
-        day: "Day 2 : Bangkok City Tour", 
-        image: thailand2, 
-        description: "Visit Grand Palace, Wat Pho, Wat Arun. Enjoy Chao Phraya River cruise. Evening explore Patpong Night Market." 
+      {
+        day: "Day 2 : Bangkok City Tour",
+        image: thailand2,
+        description: " Experience Bangkok’s vibrant culture with a full-day city tour. Visit iconic landmarks such as the Grand Palace, Wat Pho, and Wat Arun. Explore local markets and enjoy the lively street atmosphere."
       },
-      { 
-        day: "Day 3 : Flight to Phuket", 
-        image: thailand3, 
-        description: "Fly to Phuket. Check-in at hotel. Evening visit Patong Beach and enjoy nightlife." 
+      {
+        day: "Day 3 : Flight to Phuket",
+        image: thailand3,
+        description: " Take a morning flight to Phuket, the tropical paradise of Thailand. Check into your hotel and spend the rest of the day relaxing on its pristine beaches or exploring the local surroundings."
       },
     ],
   },
@@ -105,20 +105,20 @@ const allInternationalPackageData = [
     nights: "2 N Singapore, 3 N Kuala Lumpur",
     headerImage: singaporeHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Singapore", 
-        image: singapore1, 
-        description: "Arrive at Changi Airport, transfer to hotel. Evening visit Gardens by the Bay light show." 
+      {
+        day: "Day 1 : Arrival Singapore",
+        image: singapore1,
+        description: " Arrive in Singapore and transfer to your hotel. Relax after your journey and enjoy an evening stroll at Marina Bay or explore the vibrant city nightlife."
       },
-      { 
-        day: "Day 2 : Singapore City Tour", 
-        image: singapore2, 
-        description: "Visit Sentosa Island, Merlion Park, Marina Bay Sands. Evening cable car ride." 
+      {
+        day: "Day 2 : Singapore City Tour",
+        image: singapore2,
+        description: " Embark on a full-day city tour of Singapore. Visit iconic attractions such as Gardens by the Bay, Merlion Park, Sentosa Island, and enjoy the modern charm and cultural diversity of the city."
       },
-      { 
-        day: "Day 3 : Travel to Kuala Lumpur", 
-        image: singapore3, 
-        description: "Travel to KL by road. Check-in at hotel. Evening visit KLCC Park and fountain show." 
+      {
+        day: "Day 3 : Travel to Kuala Lumpur",
+        image: singapore3,
+        description: " Travel to Kuala Lumpur, Malaysia’s bustling capital. Upon arrival, check into your hotel and spend the evening at leisure, exploring local markets or enjoying the city’s skyline views."
       },
     ],
   },
@@ -132,20 +132,20 @@ const allInternationalPackageData = [
     nights: "4 N Dubai",
     headerImage: dubaiHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Dubai", 
-        image: dubai1, 
-        description: "Arrive at Dubai Airport, transfer to hotel. Evening Dhow Cruise with dinner." 
+      {
+        day: "Day 1 : Arrival Dubai",
+        image: dubai1,
+        description: " Arrive in Dubai and transfer to your hotel. Relax and unwind after your journey. In the evening, enjoy the stunning views of the city or take a leisurely walk along Dubai Marina."
       },
-      { 
-        day: "Day 2 : Dubai City Tour", 
-        image: dubai2, 
-        description: "Visit Burj Khalifa, Dubai Mall, Palm Jumeirah. Desert Safari with BBQ dinner in evening." 
+      {
+        day: "Day 2 : Dubai City Tour",
+        image: dubai2,
+        description: " Explore Dubai’s iconic attractions on a full-day city tour. Visit Burj Khalifa, Dubai Mall, Palm Jumeirah, and Jumeirah Mosque. Experience the vibrant culture, modern architecture, and luxurious lifestyle of the city."
       },
-      { 
-        day: "Day 3 : Abu Dhabi Day Trip", 
-        image: dubai3, 
-        description: "Full day Abu Dhabi tour visiting Sheikh Zayed Mosque, Ferrari World, and Emirates Palace." 
+      {
+        day: "Day 3 : Abu Dhabi Day Trip",
+        image: dubai3,
+        description: " Take a day trip to Abu Dhabi. Visit the majestic Sheikh Zayed Grand Mosque, explore Yas Island, and witness the grandeur of the UAE’s capital city before returning to Dubai."
       },
     ],
   },
@@ -159,20 +159,20 @@ const allInternationalPackageData = [
     nights: "2 N Paris, 2 N Switzerland, 3 N Italy",
     headerImage: europeHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Paris", 
-        image: europe1, 
-        description: "Arrive in Paris, transfer to hotel. Evening Eiffel Tower visit and Seine River cruise." 
+      {
+        day: "Day 1 : Arrival Paris",
+        image: europe1,
+        description: " Arrive in Paris and transfer to your hotel. Relax and unwind after your journey. In the evening, enjoy a peaceful walk along the Seine River or explore nearby local cafes."
       },
-      { 
-        day: "Day 2 : Paris City Tour", 
-        image: europe2, 
-        description: "Visit Louvre Museum, Notre Dame, Champs-Élysées. Evening at leisure." 
+      {
+        day: "Day 2 : Paris City Tour",
+        image: europe2,
+        description: " Experience the charm of Paris with a full-day city tour. Visit iconic landmarks like the Eiffel Tower, Louvre Museum, Notre-Dame Cathedral, and soak in the city’s romantic ambiance."
       },
-      { 
-        day: "Day 3 : Travel to Switzerland", 
-        image: europe3, 
-        description: "Travel to Interlaken. Visit Jungfraujoch - Top of Europe. Overnight in Switzerland." 
+      {
+        day: "Day 3 : Travel to Switzerland",
+        image: europe3,
+        description: " Travel from Paris to Switzerland, enjoying scenic views along the way. Check into your hotel and spend the evening relaxing or exploring the local surroundings."
       },
     ],
   },
@@ -186,20 +186,20 @@ const allInternationalPackageData = [
     nights: "2 N Colombo, 2 N Kandy, 2 N Bentota",
     headerImage: sriLankaHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Colombo", 
-        image: sriLanka1, 
-        description: "Arrive at Colombo Airport, transfer to hotel. Evening city tour of Colombo." 
+      {
+        day: "Day 1 : Arrival Colombo",
+        image: sriLanka1,
+        description: " Arrive in Colombo and transfer to your hotel. Relax and unwind after your journey. In the evening, explore the city at leisure or enjoy a peaceful walk along the coast."
       },
-      { 
-        day: "Day 2 : Kandy Cultural Tour", 
-        image: sriLanka2, 
-        description: "Travel to Kandy. Visit Temple of Tooth Relic, Royal Botanical Gardens." 
+      {
+        day: "Day 2 : Kandy Cultural Tour",
+        image: sriLanka2,
+        description: " Travel to Kandy and immerse yourself in its rich cultural heritage. Visit the Temple of the Tooth, explore traditional markets, and experience the vibrant local culture."
       },
-      { 
-        day: "Day 3 : Bentota Beach Relaxation", 
-        image: sriLanka3, 
-        description: "Travel to Bentota. Enjoy beach activities, water sports, and turtle hatchery visit." 
+      {
+        day: "Day 3 : Bentota Beach Relaxation",
+        image: sriLanka3,
+        description: " Head to Bentota for a relaxing beach day. Enjoy sunbathing, water activities, or simply unwind by the pristine coastline. Evening at leisure to soak in the serene surroundings."
       },
     ],
   },
@@ -213,20 +213,20 @@ const allInternationalPackageData = [
     nights: "5 N Mauritius",
     headerImage: mauritiusHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Mauritius", 
-        image: mauritius1, 
-        description: "Arrive at Sir Seewoosagur Ramgoolam Airport, transfer to resort. Evening at leisure." 
+      {
+        day: "Day 1 : Arrival Mauritius",
+        image: mauritius1,
+        description: " Arrive in Mauritius and transfer to your hotel. Relax and unwind after your journey. In the evening, enjoy a stroll along the beach or take in the stunning sunset views."
       },
-      { 
-        day: "Day 2 : North Island Tour", 
-        image: mauritius2, 
-        description: "Visit Port Louis, Caudan Waterfront, Pamplemousses Botanical Garden." 
+      {
+        day: "Day 2 : North Island Tour",
+        image: mauritius2,
+        description: " Explore the beauty of North Mauritius, visiting attractions such as Port Louis, Pamplemousses Botanical Garden, and Grand Bay. Experience the local culture, scenic landscapes, and vibrant markets."
       },
-      { 
-        day: "Day 3 : South Island Tour", 
-        image: mauritius3, 
-        description: "Visit Trou aux Cerfs, Grand Bassin, Chamarel Seven Colored Earth." 
+      {
+        day: "Day 3 : South Island Tour",
+        image: mauritius3,
+        description: " Discover the charm of South Mauritius, including Chamarel Waterfall, Seven Colored Earths, and Black River Gorges National Park. Enjoy the breathtaking natural beauty and scenic viewpoints."
       },
     ],
   },
@@ -240,20 +240,20 @@ const allInternationalPackageData = [
     nights: "2 N Kuala Lumpur, 2 N Langkawi",
     headerImage: malaysiaHeader,
     days: [
-      { 
-        day: "Day 1 : Arrival Kuala Lumpur", 
-        image: malaysia1, 
-        description: "Arrive at KLIA, transfer to hotel. Evening visit Petronas Twin Towers." 
+      {
+        day: "Day 1 : Arrival Kuala Lumpur",
+        image: malaysia1,
+        description: " Arrive in Kuala Lumpur and transfer to your hotel. Relax after your journey and spend the evening exploring nearby attractions or enjoying the local cuisine."
       },
-      { 
-        day: "Day 2 : KL City Tour", 
-        image: malaysia2, 
-        description: "Visit Batu Caves, National Monument, Merdeka Square. Evening shopping at Bukit Bintang." 
+      {
+        day: "Day 2 : Kuala Lumpur City Tour",
+        image: malaysia2,
+        description: " Embark on a full-day city tour of Kuala Lumpur. Visit iconic landmarks such as the Petronas Twin Towers, Batu Caves, Merdeka Square, and experience the vibrant culture and modern charm of the city."
       },
-      { 
-        day: "Day 3 : Flight to Langkawi", 
-        image: malaysia3, 
-        description: "Fly to Langkawi. Island hopping tour, visit Eagle Square, Cable Car ride." 
+      {
+        day: "Day 3 : Flight to Langkawi",
+        image: malaysia3,
+        description: " Take a morning flight to Langkawi, the tropical paradise of Malaysia. Check into your hotel and enjoy the pristine beaches, serene surroundings, or explore local attractions."
       },
     ],
   }

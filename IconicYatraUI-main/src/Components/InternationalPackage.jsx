@@ -1,58 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  useMediaQuery,
-  Divider,
-  Grid,
-} from '@mui/material';
+import { Box, Typography, Button, useMediaQuery, Divider, Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import  img1 from "../assets/packageimg/internationalPackage1.png"
-import  img2 from "../assets/packageimg/internationalPackage2.jpg"
-import  img3 from "../assets/packageimg/internationalPackage3.png"
-import  img4 from "../assets/packageimg/internationalPackage4.png"
-import  img5 from "../assets/packageimg/internationalPackage5.png"
-import  img6 from "../assets/packageimg/internationalPackage6.png"
-
-const packages = [
-  {
-    id: 1,
-    title: 'Maldives',
-    image: img1,
-    queryLink: 'https://example.com/query/maldives',
-  },
-  {
-    id: 2,
-    title: 'Europe',
-    image: img2,
-    queryLink: 'https://example.com/query/europe',
-  },
-  {
-    id: 3,
-    title: 'Thailand',
-    image: img3,
-    queryLink: 'https://example.com/query/thailand',
-  },
-  {
-    id: 4,
-    title: 'Singapore',
-    image: img4,
-    queryLink: 'https://example.com/query/singapore',
-  },
-  {
-    id: 5,
-    title: 'Bali',
-    image: img5,
-    queryLink: 'https://example.com/query/bali',
-  },
-  {
-    id: 6,
-    title: 'Dubai',
-    image: img6,
-    queryLink: 'https://example.com/query/dubai',
-  },
-];
+import allInternationalPackageData from '../Data/International/packageData';
 
 const InternationalPackage = () => {
   const scrollRef = useRef(null);
@@ -76,10 +25,9 @@ const InternationalPackage = () => {
     return () => clearInterval(interval);
   }, [cardsToShow]);
 
-  const handleClick = (link) => {
-    if (link) {
-      window.open(link, '_blank'); // send query link in new tab
-    }
+  const handleClick = (packageId) => {
+    // Navigate to detailed page, e.g., /international-package/:id
+    navigate(`/internationalpackage/${packageId}`);
   };
 
   return (
@@ -110,19 +58,19 @@ const InternationalPackage = () => {
             '&::-webkit-scrollbar': { display: 'none' },
           }}
         >
-          {packages.map((pkg, i) => (
+          {allInternationalPackageData.map((pkg) => (
             <Box
-              key={i}
-              onClick={() => handleClick(pkg.queryLink)}
+              key={pkg.id}
+              onClick={() => handleClick(pkg.id)}
               sx={{
-                flex: `0 0 calc(${cardWidthPercent}% - 16px)`, // gap adjust
+                flex: `0 0 calc(${cardWidthPercent}% - 16px)`,
                 height: isMobile ? 200 : isTablet ? 220 : 260,
                 borderRadius: '15px',
                 overflow: 'hidden',
                 position: 'relative',
                 cursor: 'pointer',
                 scrollSnapAlign: 'center',
-                backgroundImage: `url(${pkg.image})`,
+                backgroundImage: `url(${pkg.headerImage})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 transition: 'transform 0.4s ease',
@@ -168,7 +116,7 @@ const InternationalPackage = () => {
                     '&:hover': { backgroundColor: '#e64a19' },
                   }}
                 >
-                  Send Query
+                  View Details
                 </Button>
               </Box>
             </Box>

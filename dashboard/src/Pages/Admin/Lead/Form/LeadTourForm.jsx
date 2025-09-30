@@ -40,7 +40,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
   const [addMore, setNewItem] = React.useState("");
   const [customItems, setCustomItems] = React.useState({
     country: [],
-    tourDestination: [],
+    destination: [],
     services: [],
     arrivalCity: [],
     arrivalLocation: [],
@@ -66,7 +66,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
     initialValues: {
       tourType: "Domestic",
       country: "",
-      tourDestination: "",
+      destination: "",
       services: "",
       adults: "",
       children: "",
@@ -89,7 +89,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
       ...initialData,
     },
     validationSchema: Yup.object({
-      tourDestination: Yup.string().required("Required"),
+      destination: Yup.string().required("Required"),
       services: Yup.string().required("Required"),
       adults: Yup.number()
         .required("Required")
@@ -236,8 +236,10 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
   };
 
 
+
+
   const fieldMapping = {
-    tourDestination: "tourtourDestination",
+    destination: "tourDestination",
     services: "servicesRequired",
     hotelType: "hotelType",
     mealPlan: "mealPlan",
@@ -386,19 +388,19 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               <TextField
                 select
                 fullWidth
-                name="tourDestination"
-                label="Tour tourDestination"
-                value={values.tourDestination}
+                name="destination"
+                label="Tour Destination"
+                value={values.destination}
                 onChange={handleChange}
-                error={touched.tourDestination && Boolean(errors.tourDestination)}
-                helperText={touched.tourDestination && errors.tourDestination}
+                error={touched.destination && Boolean(errors.destination)}
+                helperText={touched.destination && errors.destination}
               >
-                {getOptionsForField("tourDestination").map((option) =>
+                {getOptionsForField("destination").map((option) =>
                   option.value === "__add_new" ? (
                     <MenuItem
-                      key="add-new-tourDestination"
+                      key="add-new-destination"
                       value=""
-                      onClick={() => handleOpenDialog("tourDestination")}
+                      onClick={() => handleOpenDialog("destination")}
                     >
                       + Add New
                     </MenuItem>
@@ -718,24 +720,6 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl>
-                <FormLabel>Transport</FormLabel>
-                <RadioGroup
-                  row
-                  name="transport"
-                  value={values.transport}
-                  onChange={handleChange}
-                >
-                  <FormControlLabel
-                    value="Yes"
-                    control={<Radio />}
-                    label="Yes"
-                  />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -762,6 +746,24 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                   )
                 )}
               </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl>
+                <FormLabel>Transport</FormLabel>
+                <RadioGroup
+                  row
+                  name="transport"
+                  value={values.transport}
+                  onChange={handleChange}
+                >
+                  <FormControlLabel
+                    value="Yes"
+                    control={<Radio />}
+                    label="Yes"
+                  />
+                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                </RadioGroup>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 4 }}>
               <TextField

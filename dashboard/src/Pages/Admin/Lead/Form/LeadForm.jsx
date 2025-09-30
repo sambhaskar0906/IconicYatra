@@ -17,7 +17,6 @@ import {
   DialogActions,
   Snackbar,
   Alert,
-  Autocomplete
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
@@ -312,7 +311,6 @@ const LeadForm = ({ onSaveAndContinue }) => {
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             {renderTextField("Email *", "email", "email")}
           </Grid>
-
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
@@ -342,60 +340,41 @@ const LeadForm = ({ onSaveAndContinue }) => {
         </Typography>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              options={
-                countries && countries.length > 0
-                  ? countries.map((c) => c.name)
-                  : ["Loading countries..."]
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Country"
-                  fullWidth
-                />
-              )}
-              value={formik.values.country || null}
-              onChange={(e, value) => formik.setFieldValue("country", value)}
-            />
+            {renderSelectField(
+              "Country",
+              "country",
+              countries && countries.length > 0
+                ? countries.map((c) => c.name)
+                : ["Loading countries..."]
+            )}
+
+
           </Grid>
           <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              options={
-                states && states.length > 0
-                  ? states.map((s) => s.name) // ✅ Fetch full state names from API
-                  : ["No states available"]
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="State"
-                  fullWidth
-                />
-              )}
-              value={formik.values.state || null}
-              onChange={(e, value) => formik.setFieldValue("state", value)}
-            />
+            {renderSelectField(
+              "State",
+              "state",
+              states && states.length > 0
+                ? states.map((s) => s.name) // ✅ Fetch full state names from API
+                : ["No states available"]
+            )}
+
+
           </Grid>
 
+
           <Grid size={{ xs: 12, sm: 4 }}>
-            <Autocomplete
-              options={
-                cities && cities.length > 0
-                  ? cities.map((c) => c.name) // ✅ Always fetch from API
-                  : ["No cities available"]
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="City"
-                  fullWidth
-                />
-              )}
-              value={formik.values.city || null}
-              onChange={(e, value) => formik.setFieldValue("city", value)}
-            />
+            {renderSelectField(
+              "City",
+              "city",
+              cities && cities.length > 0
+                ? cities.map((c) => c.name) // ✅ Always fetch from API
+                : ["No cities available"]
+            )}
+
           </Grid>
+
+
 
         </Grid>
       </Box>

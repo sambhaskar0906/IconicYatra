@@ -4,7 +4,7 @@ import { Alert, AlertTitle, Container, Box, LinearProgress } from "@mui/material
 import Dashboard from "../Pages/Admin/Dashboard";
 import DashboardLayout from "../Layout/DashboardLayout";
 import LeadCard from "../Pages/Admin/Lead/LeadCard";
-import LeadCreationFlow from "../Pages/Admin/Lead/Form/LeadTourForm";
+import LeadCreationFlow from "../Pages/Admin/Lead/Form/LeadCreationFlow";
 import LeadEditForm from "../Pages/Admin/Lead/Form/LeadEditForm";
 import HotelCard from "../Pages/Admin/Hotel/HotelCard";
 import HotelForm from "../Pages/Admin/Hotel/Form/HotelForm";
@@ -80,7 +80,7 @@ const MainRoute = () => {
                 localStorage.clear();
                 setIsAuthenticated(false);
                 setShowExpiryAlert(false);
-                window.location.href = "http://localhost:5173/login";
+                window.location.href = "https://iconicyatra.com/login";
             }
         }, 1000);
 

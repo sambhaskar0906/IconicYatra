@@ -7,6 +7,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import Calendar from './Calendar';
 import logo from '../assets/Logo/logoiconic.jpg';
 import { Facebook, Instagram, WhatsApp } from "@mui/icons-material";
+import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 
 const Footer = () => {
   return (
@@ -18,11 +19,11 @@ const Footer = () => {
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Box sx={{ mt: 1 }}>
             <img src={logo} alt="Logo" height="55" style={{ maxWidth: '100%' }} />
-            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
               About Iconic Yatra
             </Typography>
             <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-              Iconic Yatra is a best and affordable online travel platform, offering an extensive range of travel solutions tailored to meet every traveler’s needs.
+              Welcome to Iconic Yatra – where every journey becomes an unforgettable memory! We are a premier travel company specializing in domestic and international tour packages, dedicated to providing experiences that combine comfort, adventure, and cultural discovery. At Iconic Yatra, we believe that travel is more than visiting places—it's about exploring new horizons, connecting with people, and creating stories that last a lifetime........
             </Typography>
           </Box>
         </Grid>
@@ -33,11 +34,11 @@ const Footer = () => {
             IMPORTANT LINKS
           </Typography>
           <Stack spacing={1} alignItems={{ md: 'flex-start' }}>
-            {['Gujarat', 'Himachal', 'Kashmir', 'Chardham', 'Kerala', 'Terms & Conditions', 'Careers'].map((link, idx) => (
+            {['Gujarat', 'Himachal', 'Kashmir', 'Chardham', 'Kerala', 'Honeymoon tours', ' Latest News'].map((link, idx) => (
               <Link
                 key={idx}
                 component={RouterLink}
-                to={`/${link.toLowerCase().replace(/ & /g, '-').replace(/ /g, '')}`}
+                to={'/'}
                 underline="hover"
                 color="inherit"
                 sx={{ '&:hover': { color: '#ffd700' }, transition: '0.3s' }}
@@ -54,16 +55,24 @@ const Footer = () => {
             OUR MENU
           </Typography>
           <Stack spacing={1} alignItems={{ md: 'flex-start' }}>
-            {['About us', 'Latest Blogs', 'Gallery', 'Honeymoon tours', 'Testimonials', 'Contact', 'Latest News'].map((link, idx) => (
+            {[
+              { name: "About us", path: "/aboutus" },
+              { name: "Latest Blogs", path: "/latestblogs" },
+              { name: "Gallery", path: "/gallery" },
+              { name: "Testimonials", path: "/testimonials" },
+              { name: "Term & Conditions", path: "/terms-conditions" },
+              { name: "Contact", path: "/contact" },
+              { name: "Career", path: "/careers" }
+            ].map((link, idx) => (
               <Link
                 key={idx}
                 component={RouterLink}
-                to={`/${link.toLowerCase().replace(/ /g, '')}`}
+                to={link.path}
                 underline="hover"
                 color="inherit"
-                sx={{ '&:hover': { color: '#ffd700' }, transition: '0.3s' }}
+                sx={{ "&:hover": { color: "#ffd700" }, transition: "0.3s" }}
               >
-                › {link}
+                › {link.name}
               </Link>
             ))}
           </Stack>
@@ -81,13 +90,13 @@ const Footer = () => {
                 B-25, 2nd Floor Sector -64, Noida, Uttar Pradesh 201301
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <CallIcon sx={{ mr: 1 }} />
-              <Typography variant="body2">+91 9958120707</Typography>
+              <Typography variant="body2">+91 7053900957</Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <CallIcon sx={{ mr: 1 }} />
-              <Typography variant="body2">+91 9990273606</Typography>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <PhoneInTalkIcon sx={{ mr: 1 }} />
+              <Typography variant="body2">01204582960</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <EmailIcon sx={{ mr: 1 }} />
@@ -189,7 +198,7 @@ const Footer = () => {
         >
           {/* Support */}
           <Typography variant="body2" sx={{ fontWeight: 500, mt: 1.5 }}>
-            <strong>Support (24x7):</strong> +91 120 2555001
+            <strong>Support (24x7):</strong> +91 7053900957
           </Typography>
         </Grid>
 
