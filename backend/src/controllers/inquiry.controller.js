@@ -2,25 +2,25 @@ import Inquiry from "../models/Inquiry.model.js";
 import nodemailer from "nodemailer";
 
 export const createInquiry = async (req, res) => {
-    try {
-        const inquiry = new Inquiry(req.body);
-        await inquiry.save();
+  try {
+    const inquiry = new Inquiry(req.body);
+    await inquiry.save();
 
-        // Nodemailer transporter
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.gmail,
-                pass: process.env.app_pass,
-            },
-        });
+    // Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.gmail,
+        pass: process.env.app_pass,
+      },
+    });
 
-        // Attractive HTML email
-        const mailOptions = {
-            from: `"Iconic Yatra" <${process.env.gmail}>`,
-            to: process.env.gmail, // admin email
-            subject: `✈ New Travel Inquiry - ${inquiry.destination}`,
-            html: `
+    // Attractive HTML email
+    const mailOptions = {
+      from: `"Iconic Yatra" <${process.env.gmail}>`,
+      to: process.env.gmail, // admin email
+      subject: `✈ New Travel Inquiry - ${inquiry.destination}`,
+      html: `
         <div style="font-family: Arial, sans-serif; padding:20px; background:#f9f9f9;">
           <div style="max-width:600px; margin:auto; background:white; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); overflow:hidden;">
             
@@ -43,13 +43,13 @@ export const createInquiry = async (req, res) => {
           </div>
         </div>
       `
-        };
+    };
 
-        await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 
-        res.status(201).json({ success: true, message: "Inquiry submitted successfully!", inquiry });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Failed to submit inquiry" });
-    }
+    res.status(201).json({ success: true, message: "Inquiry submitted successfully!", inquiry });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to submit inquiry" });
+  }
 };

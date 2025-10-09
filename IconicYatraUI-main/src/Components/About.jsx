@@ -145,7 +145,7 @@ const AboutUs = () => {
         <Container sx={{ position: "relative", zIndex: 2 }}>
           <Chip
             icon={<Star color="white" />}
-            label="Years of Excellence"
+            label="Since of 2021"
             sx={{
               bgcolor: "rgba(255,255,255,0.2)",
               color: "white",

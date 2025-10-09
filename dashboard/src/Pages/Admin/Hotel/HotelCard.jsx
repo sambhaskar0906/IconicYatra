@@ -171,7 +171,7 @@ const HotelCard = () => {
               <TableCell sx={{ fontWeight: "bold" }}>Category</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Mobile</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: "bold", }}>Address</TableCell>
+              <TableCell sx={{ fontWeight: "bold", }}>Country</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>City</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>Action</TableCell>
@@ -187,7 +187,7 @@ const HotelCard = () => {
                 <TableCell>{hotel.hotelType}</TableCell>
                 <TableCell>{hotel.contactDetails?.mobile}</TableCell>
                 <TableCell>{hotel.contactDetails?.email}</TableCell>
-                <TableCell>{hotel.location?.address1}</TableCell>
+                <TableCell>{hotel.location?.country}</TableCell>
                 <TableCell>{hotel.location?.city}</TableCell>
                 <TableCell>
                   <Chip

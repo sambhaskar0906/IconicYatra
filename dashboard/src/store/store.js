@@ -9,6 +9,7 @@ import cityReducer from "../features/allcities/citySlice";
 import profileReducer from "../features/user/userSlice";
 import vehicleQuotationReducer from "../features/quotation/vehicleQuotationSlice"
 import flightQuotationReducer from "../features/quotation/flightQuotationSlice"
+import hotelQuotationReducer from "../features/quotation/hotelQuotation"
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     profile: profileReducer,
     vehicleQuotation: vehicleQuotationReducer,
     flightQuotation: flightQuotationReducer,
+    hotelQuotation: hotelQuotationReducer,
   },
 });
 

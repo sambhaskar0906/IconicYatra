@@ -59,6 +59,12 @@ app.use("api/v1/days", dayRoutes);
 import FlightQuotationRouter from "./src/routers/quotation/flightQuotation.router.js";
 app.use("/api/v1/flightQT", FlightQuotationRouter);
 
+import leadOptionsRoutes from "./src/routers/leadOptionsRoutes.js";
+app.use("/api/v1/lead-options", leadOptionsRoutes);
+
+import hotelQuotationRouter from "./src/routers/quotation/hotelQuotation.router.js";
+app.use("/api/v1/hotelQT", hotelQuotationRouter);
+
 // vehicle Quotation
 import vehicleQuotationRouter from "./src/routers/quotation/vehicleQuotation.router.js";
 app.use("/api/v1/vehicleQT", vehicleQuotationRouter);

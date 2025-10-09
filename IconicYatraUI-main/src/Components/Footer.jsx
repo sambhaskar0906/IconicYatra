@@ -104,7 +104,7 @@ const Footer = () => {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <EmailIcon sx={{ mr: 1 }} />
-              <Typography variant="body2">support@iconicyatra.com</Typography>
+              <Typography variant="body2">hr@iconicyatra.com</Typography>
             </Box>
           </Stack>
         </Grid>

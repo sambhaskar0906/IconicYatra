@@ -86,6 +86,24 @@ export const addLeadOption = createAsyncThunk(
   }
 );
 
+export const deleteLeadOption = createAsyncThunk(
+  "lead/deleteLeadOption",
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      const res = await axios.delete(`/lead-options/${id}`);
+
+      // Refresh lead options after deletion
+      dispatch(getLeadOptions());
+
+      return res.data.message;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete lead option"
+      );
+    }
+  }
+);
+
 
 const initialState = {
   list: [],
@@ -234,6 +252,20 @@ export const leadSlice = createSlice({
         }
       })
       .addCase(addLeadOption.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteLeadOption.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteLeadOption.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.message = action.payload;
+      })
+      .addCase(deleteLeadOption.rejected, (state, action) => {
         state.loading = false;
         state.success = false;
         state.error = action.payload;

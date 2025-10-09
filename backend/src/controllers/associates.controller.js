@@ -19,7 +19,7 @@ export const createAssociate = async (req, res, next) => {
     }
 
     const newAssociate = new Associate({
-      
+
       personalDetails: {
         fullName: personalDetails.fullName,
         mobileNumber: personalDetails.mobileNumber,

@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "../../utils/axios";
 
-
 /**
  * Fetch all countries
  */
@@ -37,6 +36,36 @@ export const fetchStatesByCountry = createAsyncThunk(
  */
 export const fetchCitiesByState = createAsyncThunk(
     "countryStateAndCity/fetchCitiesByState",
+    async ({ countryName, stateName, type }, { rejectWithValue }) => {
+        try {
+            const { data } = await axios.get(`countryStateAndCity/cities/${countryName}/${stateName}`);
+            return data.cities;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+/**
+ * For domestic cities (India specific)
+ */
+export const fetchDomesticCities = createAsyncThunk(
+    "countryStateAndCity/fetchDomesticCities",
+    async (stateName, { rejectWithValue }) => {
+        try {
+            const { data } = await axios.get(`countryStateAndCity/cities/india/${stateName}`);
+            return data.cities;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+/**
+ * For international cities
+ */
+export const fetchInternationalCities = createAsyncThunk(
+    "countryStateAndCity/fetchInternationalCities",
     async ({ countryName, stateName }, { rejectWithValue }) => {
         try {
             const { data } = await axios.get(`countryStateAndCity/cities/${countryName}/${stateName}`);
@@ -94,7 +123,7 @@ const countryStateAndCitySlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Fetch Cities
+            // Fetch Cities (General)
             .addCase(fetchCitiesByState.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -104,6 +133,34 @@ const countryStateAndCitySlice = createSlice({
                 state.cities = action.payload;
             })
             .addCase(fetchCitiesByState.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Fetch Domestic Cities
+            .addCase(fetchDomesticCities.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchDomesticCities.fulfilled, (state, action) => {
+                state.loading = false;
+                state.cities = action.payload;
+            })
+            .addCase(fetchDomesticCities.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Fetch International Cities
+            .addCase(fetchInternationalCities.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchInternationalCities.fulfilled, (state, action) => {
+                state.loading = false;
+                state.cities = action.payload;
+            })
+            .addCase(fetchInternationalCities.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });

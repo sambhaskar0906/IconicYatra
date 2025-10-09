@@ -6,7 +6,7 @@ const TrustedCompany = () => {
     <Box sx={{ py: 8, width: '100%', px: { xs: 2, md: 6 } }}>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #0a0d3e 0%, #1a1f6b 100%)',
+          background: 'linear-gradient(135deg, #1f3c65 0%, #3aa8e5 100%)',
           color: '#fff',
           borderRadius: '40px',
           p: { xs: 4, sm: 6, md: 8 },

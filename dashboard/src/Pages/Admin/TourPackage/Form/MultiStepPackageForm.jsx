@@ -18,10 +18,9 @@ const MultiStepPackageForm = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Step 1 → Create new package
     const handleNextStep1 = async (values, stayLocations) => {
         try {
-            const payload = { ...values, stayLocations }; // ✅ stayLocations include karna
+            const payload = { ...values, stayLocations };
             const result = await dispatch(createPackage(payload)).unwrap();
 
             if (!result || !result._id) {
@@ -29,14 +28,15 @@ const MultiStepPackageForm = () => {
                 return;
             }
 
-            setCreatedPackageId(result._id.toString().trim());
-            setStep1Data(payload); // Step1 data save
-            setActiveStep(1);
+            setStep1Data(result.package || payload); // store Step 1 data
+            setCreatedPackageId(result.package?._id || result._id); // store package ID
+            setActiveStep(1); // move to step 2
         } catch (err) {
             console.error(err);
             alert("❌ Failed to create package");
         }
     };
+
 
     // Step 2 → Update tour details
     const handleNextStep2 = async (step2Values) => {
@@ -113,14 +113,19 @@ const MultiStepPackageForm = () => {
                         initialData={step1Data}
                     />
                 )}
-                {activeStep === 1 && (
+
+                {activeStep === 1 && createdPackageId && step1Data ? (
                     <TourDetailsForm
                         onNext={handleNextStep2}
-                        initialData={step1Data} // ✅ Step1 data automatically Step2 me
+                        initialData={step1Data}
                         packageId={createdPackageId}
+                        packageData={step1Data}
                     />
-                )}
+                ) : activeStep === 1 ? (
+                    <Typography>Loading Step 2...</Typography>
+                ) : null}
             </Box>
+
 
             {activeStep === 1 && (
                 <Box mt={2} display="flex" justifyContent="space-between">

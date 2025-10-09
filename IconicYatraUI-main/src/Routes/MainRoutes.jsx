@@ -16,7 +16,7 @@ import TigerSafari from '../Pages/HomePages/TigerSafari';
 import Domestic from '../Pages/HomePages/Domestic';
 import International from '../Pages/HomePages/International';
 import SpecialPackages from '../Components/SpecialPackages';
-import PackageDetail from '../Components/PackageDetails'; // Make sure this path is correct
+import PackageDetail from '../Components/PackageDetails';
 
 import Support from '../Pages/HomePages/Support';
 import WhyChooseUs from '../Components/WhyChooseUs';

@@ -10,39 +10,80 @@ import {
   Link as MUILink,
   Container,
   Divider,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchDomesticPackages } from "../../Features/packageSlice";
 import PackageCard from "../../Components/PackageCard";
-import allDomesticPackageData from "../../Data/Domestic/packageData";
+import { BASE_URL } from "../../Utils/axiosInstance";
+
 
 const Domestic = () => {
   const { destination } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { domestic: packages, loading, error } = useSelector(
+    (state) => state.packages
+  );
+
   const [selectedDestination, setSelectedDestination] = useState("All");
 
   useEffect(() => {
+    dispatch(fetchDomesticPackages());
+  }, [dispatch]);
+
+
+  // ✅ Handle destination filter (via URL param)
+  useEffect(() => {
     if (destination && destination !== "All") {
-      const formattedDestination = destination.replace(/-/g, " ").toLowerCase().trim();
-      const matched = allDomesticPackageData.find(
+      const formattedDestination = destination
+        .replace(/-/g, " ")
+        .toLowerCase()
+        .trim();
+      const matched = packages.find(
         (pkg) => pkg.title.toLowerCase().trim() === formattedDestination
       );
       setSelectedDestination(matched ? matched.title : "All");
     } else {
       setSelectedDestination("All");
     }
-  }, [destination]);
+  }, [destination, packages]);
 
+  // ✅ Filter logic
   const filteredPackages =
     selectedDestination === "All"
-      ? allDomesticPackageData
-      : allDomesticPackageData.filter(
+      ? packages
+      : packages.filter(
         (pkg) =>
-          pkg.title.toLowerCase().trim() === selectedDestination.toLowerCase().trim()
+          pkg.title.toLowerCase().trim() ===
+          selectedDestination.toLowerCase().trim()
       );
 
-  const handleCardClick = (packageIndex) => {
-    navigate(`/package/${packageIndex}`);
+  // ✅ Handle click
+  const handleCardClick = (id) => {
+    navigate(`/package/${id}`);
   };
 
+  // ✅ Loading / Error states
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  // ✅ Main UI
   return (
     <Box sx={{ backgroundColor: "#f4f6f8", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="lg">
@@ -53,18 +94,26 @@ const Domestic = () => {
             p: 2,
             mb: 4,
             borderRadius: 3,
-            background: "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)",
+            background:
+              "linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)",
           }}
         >
           <Breadcrumbs aria-label="breadcrumb">
             <MUILink underline="hover" color="inherit" component={Link} to="/">
               Home
             </MUILink>
-            <MUILink underline="hover" color="inherit" component={Link} to="/domestic">
+            <MUILink
+              underline="hover"
+              color="inherit"
+              component={Link}
+              to="/domestic"
+            >
               Domestic Packages
             </MUILink>
             <Typography color="text.primary" fontWeight="bold">
-              {selectedDestination === "All" ? "All Packages" : selectedDestination}
+              {selectedDestination === "All"
+                ? "All Packages"
+                : selectedDestination}
             </Typography>
           </Breadcrumbs>
         </Paper>
@@ -91,7 +140,8 @@ const Domestic = () => {
               my: 2,
               height: "4px",
               borderRadius: 2,
-              background: "linear-gradient(90deg, #ff9800, #f44336)",
+              background:
+                "linear-gradient(90deg, #ff9800, #f44336)",
             }}
           />
           <Typography variant="subtitle1" color="text.secondary">
@@ -99,37 +149,40 @@ const Domestic = () => {
           </Typography>
         </Box>
 
-        {/* Package Grid */}
+        {/* Packages Grid */}
         {filteredPackages.length > 0 ? (
           <Grid container spacing={4} justifyContent="center">
-            {filteredPackages.map((pkg, index) => {
-              const originalIndex = allDomesticPackageData.findIndex(
-                (originalPkg) => originalPkg.title === pkg.title
-              );
-              return (
-                <Grid
-                  size={{ xs: 12, sm: 6, md: 3 }}
-                  key={originalIndex}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-8px)",
-                      boxShadow: "0 12px 20px rgba(0,0,0,0.2)",
-                    },
-                  }}
-                >
-                  <PackageCard
-                    image={pkg.headerImage}
-                    title={pkg.title}
-                    duration={pkg.sightseeing}
-                    priceNote={pkg.priceNote}
-                    onClick={() => handleCardClick(originalIndex)}
-                  />
-                </Grid>
-              );
-            })}
+            {filteredPackages.map((pkg) => (
+              <Grid
+                size={{ xs: 12, sm: 6, md: 3 }}
+                key={pkg._id}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-8px)",
+                    boxShadow: "0 12px 20px rgba(0,0,0,0.2)",
+                  },
+                }}
+              >
+                <PackageCard
+                  image={
+                    pkg.bannerImage
+                      ? pkg.bannerImage.startsWith("http")
+                        ? pkg.bannerImage
+                        : pkg.bannerImage.startsWith("/upload/")
+                          ? `${BASE_URL}${pkg.bannerImage}`
+                          : `${BASE_URL}/upload/${pkg.bannerImage}`
+                      : "https://via.placeholder.com/300x200?text=No+Image"
+                  }
+                  title={pkg.title || "No Title"}
+                  location={`${pkg.sector || "Unknown Sector"}, ${pkg.arrivalCity || "Unknown City"}`}
+                  onClick={() => handleCardClick(pkg._id)}
+                  onQueryClick={() => console.log("Query:", pkg._id)}
+                />
+              </Grid>
+            ))}
           </Grid>
         ) : (
           <Paper
@@ -161,7 +214,7 @@ const Domestic = () => {
             fontStyle: "italic",
           }}
         >
-          Showing {filteredPackages.length} of {allDomesticPackageData.length} packages
+          Showing {filteredPackages.length} of {packages.length} packages
         </Typography>
       </Container>
     </Box>

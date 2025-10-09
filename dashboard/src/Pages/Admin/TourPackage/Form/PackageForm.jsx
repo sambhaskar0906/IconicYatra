@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import HomeWorkIcon from "@mui/icons-material/HomeWork";
 import { useFormik } from "formik";
@@ -29,8 +28,11 @@ import {
   fetchCitiesByState,
   clearStates,
   clearCities,
+  fetchDomesticCities,
+  fetchInternationalCities
 } from "../../../../features/location/locationSlice";
-import { getLeadOptions, addLeadOption } from "../../../../features/leads/leadSlice";
+import { getLeadOptions, addLeadOption, deleteLeadOption } from "../../../../features/leads/leadSlice";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const PackageEntryForm = ({ onNext, initialData }) => {
   const [tourType, setTourType] = useState(initialData?.tourType || "Domestic");
@@ -56,11 +58,8 @@ const PackageEntryForm = ({ onNext, initialData }) => {
     dispatch(getLeadOptions());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (tourType === "Domestic") {
-      dispatch(fetchStatesByCountry("India"));
-    }
-  }, [tourType, dispatch]);
+  // REMOVED the problematic useEffect - cities should only be fetched when a state is selected
+  // NOT when tourType changes
 
   const formik = useFormik({
     initialValues: {
@@ -126,31 +125,60 @@ const PackageEntryForm = ({ onNext, initialData }) => {
   const handleCountryChange = (countryName) => {
     setSelectedCountry(countryName);
     formik.setFieldValue("destinationCountry", countryName);
+    formik.setFieldValue("sector", ""); // reset state
+    formik.setFieldValue("packageSubType", []);
 
-    dispatch(fetchStatesByCountry(countryName));
     setAllCities([]);
     setLocationList([]);
     setStayLocationList([]);
+    dispatch(clearStates());
     dispatch(clearCities());
+
+    // ✅ Pass only countryName string
+    dispatch(fetchStatesByCountry(countryName));
   };
 
-  const handleSectorChange = (stateName) => {
-    formik.setFieldValue("sector", stateName);
+  const handleSectorChange = (selectedStateName) => {
+    console.log("Selected state:", selectedStateName);
+    console.log("Tour type:", tourType);
+    console.log("Selected country:", selectedCountry);
 
-    dispatch(
-      fetchCitiesByState({
-        countryName: tourType === "Domestic" ? "India" : selectedCountry,
-        stateName,
-      })
-    )
-      .unwrap()
-      .then((cityList) => {
-        const cities = cityList.map((c) => c.name);
-        setAllCities(cities);
-        setLocationList(cities);
-        setStayLocationList([]);
-        setSearchText("");
-      });
+    formik.setFieldValue("sector", selectedStateName);
+
+    if (tourType === "Domestic") {
+      // For domestic tours - India specific
+      dispatch(fetchDomesticCities(selectedStateName))
+        .unwrap()
+        .then((cityList) => {
+          console.log("Domestic cities received:", cityList);
+          const cities = cityList.map((c) => c.name || c.city || c);
+          setAllCities(cities);
+          setLocationList(cities);
+          setStayLocationList([]);
+          setSearchText("");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch domestic cities:", error);
+        });
+    } else {
+      // For international tours
+      dispatch(fetchInternationalCities({
+        countryName: selectedCountry,
+        stateName: selectedStateName
+      }))
+        .unwrap()
+        .then((cityList) => {
+          console.log("International cities received:", cityList);
+          const cities = cityList.map((c) => c.name || c.city || c);
+          setAllCities(cities);
+          setLocationList(cities);
+          setStayLocationList([]);
+          setSearchText("");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch international cities:", error);
+        });
+    }
   };
 
   const handleSearch = (e) => {
@@ -193,7 +221,12 @@ const PackageEntryForm = ({ onNext, initialData }) => {
 
       await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
 
-      formik.setFieldValue(backendField, newValue);
+      // Fetch updated lead options from backend
+      await dispatch(getLeadOptions()).unwrap();
+
+      // Update form field
+      formik.setFieldValue(backendField, [...formik.values[backendField], newValue]);
+
       handleCloseDialog();
     } catch (error) {
       console.error("Failed to add new option", error);
@@ -312,13 +345,12 @@ const PackageEntryForm = ({ onNext, initialData }) => {
           {/* Package Sub Type */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Autocomplete
-              multiple   // ✅ multiple enable
+              multiple
               fullWidth
               options={getOptionsForField("packageSubType").map((opt) => opt.value)}
-              value={formik.values.packageSubType || []}   // ✅ array use
+              value={formik.values.packageSubType || []}
               onChange={(e, newValue) => {
                 if (newValue.includes("__add_new")) {
-                  // remove the "__add_new" from selected values
                   const filtered = newValue.filter((v) => v !== "__add_new");
                   formik.setFieldValue("packageSubType", filtered);
                   handleOpenDialog("packageSubType");
@@ -334,11 +366,47 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                   helperText={formik.touched.packageSubType && formik.errors.packageSubType}
                 />
               )}
-              renderOption={(props, option) => (
-                <li {...props} key={option}>
-                  {option === "__add_new" ? "+ Add New" : option}
-                </li>
-              )}
+              renderOption={(props, option) => {
+                if (option === "__add_new") {
+                  return (
+                    <li {...props} key="add_new" style={{ color: "#1976d2", fontWeight: 500 }}>
+                      + Add New
+                    </li>
+                  );
+                }
+
+                const optData = options.find(
+                  (o) => o.fieldName === "packageSubType" && o.value === option
+                );
+
+                return (
+                  <li
+                    {...props}
+                    key={option}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{option}</span>
+                    {optData && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete "${option}"?`)) {
+                            dispatch(deleteLeadOption(optData._id));
+                          }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </li>
+                );
+              }}
             />
           </Grid>
 
@@ -370,25 +438,31 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                     background: "#fafafa",
                   }}
                 >
-                  {locationList.map((city, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        p: 1,
-                        mb: 1,
-                        borderRadius: 1,
-                        background: "#f5f5f5",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        "&:hover": { background: "#e0f7fa" },
-                      }}
-                      onClick={() => handleSelectCity(city)}
-                    >
-                      <LocationOnIcon fontSize="small" sx={{ mr: 1, color: "grey.600" }} />
-                      {city}
-                    </Box>
-                  ))}
+                  {locationList.length > 0 ? (
+                    locationList.map((city, i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          p: 1,
+                          mb: 1,
+                          borderRadius: 1,
+                          background: "#f5f5f5",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          "&:hover": { background: "#e0f7fa" },
+                        }}
+                        onClick={() => handleSelectCity(city)}
+                      >
+                        <LocationOnIcon fontSize="small" sx={{ mr: 1, color: "grey.600" }} />
+                        {city}
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                      {formik.values.sector ? "No cities found" : "Select a state to see cities"}
+                    </Typography>
+                  )}
                 </Box>
               </Grid>
 
@@ -413,92 +487,93 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                     background: "#f0f8ff",
                   }}
                 >
-                  {stayLocationList.map((item, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        p: 1,
-                        mb: 1,
-                        borderRadius: 1,
-                        background: "#e3f2fd",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* City name + actions */}
+                  {stayLocationList.length > 0 ? (
+                    stayLocationList.map((item, i) => (
                       <Box
+                        key={i}
                         sx={{
                           display: "flex",
                           justifyContent: "space-between",
-                          alignItems: "center",
-                          width: "100%",
+                          alignItems: "flex-start",
+                          p: 1,
+                          mb: 1,
+                          borderRadius: 1,
+                          background: "#e3f2fd",
+                          flexDirection: "column",
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <HomeWorkIcon fontSize="small" sx={{ mr: 1, color: "#1976d2" }} />
-                          {item.city}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <HomeWorkIcon fontSize="small" sx={{ mr: 1, color: "#1976d2" }} />
+                            {item.city}
+                          </Box>
+
+                          <Box>
+                            <IconButton
+                              size="small"
+                              disabled={i === 0}
+                              onClick={() => {
+                                if (i === 0) return;
+                                const newList = [...stayLocationList];
+                                const [moved] = newList.splice(i, 1);
+                                newList.splice(i - 1, 0, moved);
+                                setStayLocationList(newList);
+                              }}
+                            >
+                              ⬆️
+                            </IconButton>
+
+                            <IconButton
+                              size="small"
+                              disabled={i === stayLocationList.length - 1}
+                              onClick={() => {
+                                if (i === stayLocationList.length - 1) return;
+                                const newList = [...stayLocationList];
+                                const [moved] = newList.splice(i, 1);
+                                newList.splice(i + 1, 0, moved);
+                                setStayLocationList(newList);
+                              }}
+                            >
+                              ⬇️
+                            </IconButton>
+
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleRemoveCity(item.city)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </Box>
 
-                        <Box>
-                          {/* Move Up */}
-                          <IconButton
-                            size="small"
-                            disabled={i === 0}
-                            onClick={() => {
-                              if (i === 0) return;
-                              const newList = [...stayLocationList];
-                              const [moved] = newList.splice(i, 1);
-                              newList.splice(i - 1, 0, moved);
-                              setStayLocationList(newList);
-                            }}
-                          >
-                            ⬆️
-                          </IconButton>
-
-                          {/* Move Down */}
-                          <IconButton
-                            size="small"
-                            disabled={i === stayLocationList.length - 1}
-                            onClick={() => {
-                              if (i === stayLocationList.length - 1) return;
-                              const newList = [...stayLocationList];
-                              const [moved] = newList.splice(i, 1);
-                              newList.splice(i + 1, 0, moved);
-                              setStayLocationList(newList);
-                            }}
-                          >
-                            ⬇️
-                          </IconButton>
-
-                          {/* Delete */}
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleRemoveCity(item.city)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
+                        <TextField
+                          type="number"
+                          size="small"
+                          label="Number of Nights"
+                          value={item.nights}
+                          onChange={(e) => {
+                            const newList = [...stayLocationList];
+                            newList[i].nights = e.target.value;
+                            setStayLocationList(newList);
+                          }}
+                          sx={{ mt: 1, width: "50%" }}
+                          inputProps={{ min: 1 }}
+                        />
                       </Box>
-
-                      {/* Nights field */}
-                      <TextField
-                        type="number"
-                        size="small"
-                        label="Number of Nights"
-                        value={item.nights}
-                        onChange={(e) => {
-                          const newList = [...stayLocationList];
-                          newList[i].nights = e.target.value;
-                          setStayLocationList(newList);
-                        }}
-                        sx={{ mt: 1, width: "50%" }}
-                        inputProps={{ min: 1 }}
-                      />
-                    </Box>
-                  ))}
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                      No stay locations selected
+                    </Typography>
+                  )}
                 </Box>
               </Grid>
             </Grid>
@@ -516,10 +591,10 @@ const PackageEntryForm = ({ onNext, initialData }) => {
             </Button>
           </Grid>
         </Grid>
-      </form >
+      </form>
 
       {/* Add New Dialog */}
-      <Dialog Dialog open={openDialog} onClose={handleCloseDialog} >
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Add New {currentField}</DialogTitle>
         <DialogContent>
           <TextField
@@ -536,7 +611,7 @@ const PackageEntryForm = ({ onNext, initialData }) => {
           <Button onClick={handleAddNewItem} variant="contained">Add</Button>
         </DialogActions>
       </Dialog>
-    </Box >
+    </Box>
   );
 };
 

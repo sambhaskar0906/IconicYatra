@@ -89,20 +89,20 @@ const ContactUs = () => {
             animation: `${floatAnimation} 6s ease-in-out infinite`,
           }}
         >
-          <Chip 
-            label="Get in Touch" 
-            sx={{ 
-              bgcolor: 'primary.main', 
-              color: 'white', 
-              mb: 2, 
+          <Chip
+            label="Get in Touch"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              mb: 2,
               fontSize: '1rem',
               px: 1,
               py: 2
-            }} 
+            }}
           />
-          <Typography 
-            variant="h2" 
-            fontWeight="bold" 
+          <Typography
+            variant="h2"
+            fontWeight="bold"
             sx={{
               fontSize: { xs: '2.2rem', md: '3rem' },
               textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
@@ -111,9 +111,9 @@ const ContactUs = () => {
           >
             CONTACT US
           </Typography>
-          <Typography 
-            variant="h6" 
-            sx={{ 
+          <Typography
+            variant="h6"
+            sx={{
               fontSize: { xs: '1rem', md: '1.2rem' },
               maxWidth: '600px',
               mx: 'auto',
@@ -126,23 +126,23 @@ const ContactUs = () => {
       </Box>
 
       {/* Main Section */}
-      <Box sx={{ 
-        py: 8, 
+      <Box sx={{
+        py: 8,
         backgroundColor: '#f9f9f9',
         backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)',
         backgroundSize: '20px 20px',
       }}>
-        <Grid 
-          container 
-          spacing={4} 
-          sx={{ 
+        <Grid
+          container
+          spacing={4}
+          sx={{
             px: { xs: 2, md: 8 },
             maxWidth: 1400,
             mx: 'auto'
           }}
         >
           {/* Left Side - Contact Info */}
-          <Grid size={{xs:12, md:5}}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Fade in={true} timeout={1000}>
               <Paper
                 elevation={8}
@@ -193,8 +193,8 @@ const ContactUs = () => {
                     </Box>
                     <Box>
                       <Typography fontWeight="bold" variant="h6">Phone Numbers</Typography>
-                      <Typography sx={{ mt: 0.5 }}>+91 1204099066</Typography>
-                      <Typography>+91 9696974038</Typography>
+                      <Typography sx={{ mt: 0.5 }}>+91 1204582960</Typography>
+                      <Typography>+91 7053900957</Typography>
                     </Box>
                   </Stack>
 
@@ -211,7 +211,7 @@ const ContactUs = () => {
                     </Box>
                     <Box>
                       <Typography fontWeight="bold" variant="h6">Office Address</Typography>
-                      <Typography sx={{ mt: 0.5 }}>B-25 Sector-64, Noida (201307), Uttar Pradesh</Typography>
+                      <Typography sx={{ mt: 0.5 }}>B-25 Sector-64, Noida (201301), Uttar Pradesh</Typography>
                     </Box>
                   </Stack>
 
@@ -228,7 +228,7 @@ const ContactUs = () => {
                     </Box>
                     <Box>
                       <Typography fontWeight="bold" variant="h6">Email</Typography>
-                      <Typography sx={{ mt: 0.5 }}>info@iconicyatra.in</Typography>
+                      <Typography sx={{ mt: 0.5 }}>info@iconicyatra.com</Typography>
                     </Box>
                   </Stack>
                 </Box>
@@ -237,7 +237,7 @@ const ContactUs = () => {
           </Grid>
 
           {/* Right Side - Contact Form */}
-          <Grid size={{xs:12, md:7}}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Fade in={true} timeout={1000} style={{ transitionDelay: '200ms' }}>
               <Paper
                 elevation={4}
@@ -262,7 +262,7 @@ const ContactUs = () => {
 
                 <Box component="form" onSubmit={handleSubmit}>
                   <Grid container spacing={3}>
-                    <Grid szie={{xs:12,md:6}} >
+                    <Grid szie={{ xs: 12, md: 6 }} >
                       <TextField
                         label="Your Name*"
                         name="name"
@@ -281,7 +281,7 @@ const ContactUs = () => {
                         }}
                       />
                     </Grid>
-                    <Grid size={{xs:12, md:6}} >
+                    <Grid size={{ xs: 12, md: 6 }} >
                       <TextField
                         label="Your Email*"
                         type="email"
@@ -301,7 +301,7 @@ const ContactUs = () => {
                         }}
                       />
                     </Grid>
-                    <Grid size={{xs:12}}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         label="Your Message*"
                         name="message"
@@ -323,7 +323,7 @@ const ContactUs = () => {
                       />
                     </Grid>
 
-                    <Grid size={{xs:12}}  textAlign="center">
+                    <Grid size={{ xs: 12 }} textAlign="center">
                       <Button
                         type="submit"
                         variant="contained"
@@ -357,8 +357,8 @@ const ContactUs = () => {
       </Box>
 
       {/* Full-width Google Map with enhanced styling */}
-      <Box sx={{ 
-        mt: 4, 
+      <Box sx={{
+        mt: 4,
         position: 'relative',
         '&::before': {
           content: '""',
@@ -372,8 +372,8 @@ const ContactUs = () => {
         }
       }}>
         <iframe
-          title="Google Map"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d224345.92404625914!2d77.06889969468788!3d28.527582010802037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce43c46e2de13%3A0xf07f63f8cc8c0b9a!2sSector%2018%2C%20Noida%2C%20Uttar%20Pradesh%20201301!5e0!3m2!1sen!2sin!4v1720519366677!5m2!1sen!2sin"
+          title="Google Map - B-25, Sector 64, Noida"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.4992636520133!2d77.37238817349676!3d28.614795131144554!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce56012bbdd9b%3A0x20e3b9eb57378bd9!2s25%2C%20B%20Block%20Rd%2C%20B%20Block%2C%20Sector%2064%2C%20Noida%2C%20Uttar%20Pradesh%20201307!5e0!3m2!1sen!2sin!4v1759315939359!5m2!1sen!2sin"
           width="100%"
           height="450"
           style={{ border: 0, display: 'block' }}
@@ -381,7 +381,10 @@ const ContactUs = () => {
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
         ></iframe>
+
       </Box>
+
+
     </>
   );
 };

@@ -1,623 +1,303 @@
-// src/pages/CreateHotel.jsx
-import React, { useState, useEffect } from "react";
+// HotelForm.jsx
+import React, { useEffect, useState } from "react";
 import {
   Box,
-  Button,
   Stepper,
   Step,
   StepLabel,
-  Typography,
+  Button,
+  Grid,
   TextField,
   MenuItem,
-  Select,
+  Typography,
   InputLabel,
+  Select,
   FormControl,
-  Chip,
-  Grid,
+  FormHelperText,
+  Checkbox,
+  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Autocomplete,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { useFormik } from "formik";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import * as Yup from "yup";
+import HotelFormStep2 from "./HotelFormStep2";
+import HotelFormStep3 from "./HotelFormStep3";
+import HotelFormStep4 from "./HotelFormStep4";
+import {
+  createHotelStep1,
+  updateHotelStep2,
+  updateHotelStep3,
+  updateHotelStep4,
+  setHotelId
+} from "../../../../features/hotel/hotelSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { createHotel, clearMessages } from "../../../../features/hotel/hotelSlice";
-import { useNavigate } from "react-router-dom";
+import {
+  fetchCountries,
+  fetchStatesByCountry,
+  fetchCitiesByState,
+  clearStates,
+  clearCities,
+} from "../../../../features/location/locationSlice";
 
-const steps = [
-  "Basic Info",
-  "Contact Details",
-  "Location",
-  "Facilities & Images",
-  "Rooms",
-];
+// YE IMPORT ADD KARO - aapke leadSlice se
+import { getLeadOptions, addLeadOption, deleteLeadOption } from "../../../../features/leads/leadSlice";
 
-const CreateHotel = () => {
+const steps = ["Hotel Details", "Room Details", "Mattress Cost", "Peak Cost"];
+
+
+const validationSchema = Yup.object().shape({
+  hotelName: Yup.string().required("Required"),
+  hotelType: Yup.string().required("Required"),
+  email: Yup.string().email("Invalid email").required("Required"),
+  mobile: Yup.string().required("Required"),
+  alternateContact: Yup.string(),
+  designation: Yup.string(),
+  contactPerson: Yup.string(),
+  description: Yup.string(),
+  cancellationPolicy: Yup.string(),
+  facilities: Yup.array().min(1, "Select at least one facility"),
+  country: Yup.string(),
+  state: Yup.string(),
+  city: Yup.string(),
+  address: Yup.string(),
+  pincode: Yup.string(),
+  googleLink: Yup.string().url("Invalid URL"),
+  policy: Yup.string(),
+});
+
+const HotelForm = ({ onSubmit, initialValues, isEdit = false }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { loading, success, error } = useSelector((state) => state.hotel);
-
   const [activeStep, setActiveStep] = useState(0);
+  const [hotelId, setHotelId] = useState(null);
+  const { error, success } = useSelector((state) => state.hotel);
+  const { countries, states, cities, loading } = useSelector(
+    (state) => state.location
+  );
 
-  const [formData, setFormData] = useState({
-    hotelName: "",
-    hotelType: [],
-    status: "",
-    description: "",
-    cancellationPolicy: "",
-    contactDetails: {
+  // YE SELECTOR ADD KARO
+  const { options } = useSelector((state) => state.leads);
+
+  const [hotelData, setHotelData] = useState({
+    step1: {}, // Hotel details
+    step2: {}, // Room details
+    step3: {}, // Mattress cost
+    step4: {}, // Peak cost
+  });
+
+  // YE DIALOG STATE ADD KARO (PackageEntryForm jaise)
+  const [openDialog, setOpenDialog] = useState(false);
+  const [currentField, setCurrentField] = useState("");
+  const [addMore, setAddMore] = useState("");
+
+  // facilities dropdown options
+  const [facilityOptions, setFacilityOptions] = useState([
+    "24*7 Service",
+    "Bathroom",
+    "WiFi",
+    "Bar",
+    "Air Conditioning",
+  ]);
+
+  // modal state for facilities
+  const [openModal, setOpenModal] = useState(false);
+  const [newFacility, setNewFacility] = useState("");
+  const [tempSelected, setTempSelected] = useState([]);
+
+  const handleNext = () => setActiveStep((prev) => prev + 1);
+  const handleBack = () => setActiveStep((prev) => prev - 1);
+
+  const handleStepData = (step, data) => {
+    setHotelData((prev) => ({ ...prev, [step]: data }));
+    handleNext();
+  };
+
+  // ===== YE ADD NEW OPTION LOGIC ADD KARO (PackageEntryForm jaise) =====
+  const handleOpenDialog = (field) => {
+    setCurrentField(field);
+    setAddMore("");
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleAddNewItem = async () => {
+    if (!addMore.trim()) return;
+
+    try {
+      const newValue = addMore.trim();
+      const backendField = currentField;
+
+      await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
+
+      // Fetch updated lead options from backend
+      await dispatch(getLeadOptions()).unwrap();
+
+      // Update form field based on current field
+      if (currentField === "hotelType") {
+        formik.setFieldValue("hotelType", newValue);
+      } else if (currentField === "facilities") {
+        formik.setFieldValue("facilities", [...formik.values.facilities, newValue]);
+      }
+
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Failed to add new option", error);
+    }
+  };
+
+  const getOptionsForField = (fieldName) => {
+    const filteredOptions = options
+      ?.filter((opt) => opt.fieldName === fieldName)
+      .map((opt) => ({ value: opt.value, label: opt.value }));
+
+    return [
+      ...(filteredOptions || []),
+      { value: "__add_new", label: "+ Add New" },
+    ];
+  };
+
+  // For hotel types (single select)
+  const getHotelTypeOptions = () => {
+    const filteredOptions = options
+      ?.filter((opt) => opt.fieldName === "hotelType")
+      .map((opt) => opt.value);
+
+    return [
+      ...(filteredOptions || initialHotelTypes),
+      "__add_new"
+    ];
+  };
+
+  const formik = useFormik({
+    initialValues: {
+      hotelName: "",
+      hotelType: "",
       email: "",
       mobile: "",
       alternateContact: "",
       designation: "",
       contactPerson: "",
-    },
-    location: {
-      country: "",
+      description: "",
+      cancellationPolicy: "",
+      facilities: [],
+      mainImage: null,
+      country: "India",
       state: "",
       city: "",
-      address1: "",
+      address: "",
       pincode: "",
+      googleLink: "",
+      policy: "",
     },
-    facilities: [],
-    mainImage: null,
-    socialMedia: { googleLink: "" },
-    rooms: [
-      {
-        seasonType: "",
-        validFrom: "",
-        validTill: "",
-        roomDetails: [
-          {
-            roomType: [],
-            mealPlan: "",
-            images: [],
-            mattressCost: {
-              mealPlan: "",
-              adult: 0,
-              children: 0,
-              kidWithoutMattress: 0,
-            },
-            peakCost: [],
-          },
-        ],
-      },
-    ],
+    validationSchema,
+    enableReinitialize: true,
+    // HotelForm.jsx - onSubmit function check karo
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const formData = new FormData();
+
+        // ✅ Ensure ALL fields are included
+        Object.keys(values).forEach((key) => {
+          if (key === "facilities" || key === "hotelType") {
+            formData.append(key, JSON.stringify(values[key]));
+          } else if (values[key] !== null && values[key] !== undefined) {
+            formData.append(key, values[key]);
+          }
+        });
+
+        console.log("🔹 Sending form data with keys:", Object.keys(values));
+
+        // ✅ Step 1 API call
+        const resultAction = await dispatch(createHotelStep1(formData)).unwrap();
+        setHotelId(resultAction._id);
+        handleNext();
+      } catch (err) {
+        console.error("Hotel creation failed:", err);
+      } finally {
+        setSubmitting(false);
+      }
+    },
   });
 
-  // ✅ Input Change Handler
-  const handleChange = (e, parent = null) => {
-    const { name, value } = e.target;
-    if (parent) {
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: { ...prev[parent], [name]: value },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // ✅ Facilities Add
-  const handleAddFacility = (e) => {
-    if (e.key === "Enter" && e.target.value.trim() !== "") {
-      setFormData((prev) => ({
-        ...prev,
-        facilities: [...prev.facilities, e.target.value.trim()],
-      }));
-      e.target.value = "";
-    }
-  };
-
-  const handleSubmit = () => {
-    const payload = new FormData();
-
-    // Prepare rooms properly
-    const rooms = formData.rooms.map((r) => ({
-      ...r,
-      validFrom: r.validFrom ? new Date(r.validFrom) : null,
-      validTill: r.validTill ? new Date(r.validTill) : null,
-      roomDetails: r.roomDetails.map((rd) => ({
-        ...rd,
-        peakCost: rd.peakCost.map((pc) => ({
-          ...pc,
-          validFrom: pc.validFrom ? new Date(pc.validFrom) : null,
-          validTill: pc.validTill ? new Date(pc.validTill) : null,
-        })),
-        // remove images from JSON, handle separately
-        images: undefined,
-      })),
-    }));
-
-    // Append mainImage
-    if (formData.mainImage) {
-      payload.append("mainImage", formData.mainImage);
-    }
-
-    // Append rooms as JSON
-    payload.append("rooms", JSON.stringify(rooms));
-
-    // Append other fields
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key !== "mainImage" && key !== "rooms") {
-        if (typeof value === "object") {
-          payload.append(key, JSON.stringify(value));
-        } else {
-          payload.append(key, value);
-        }
-      }
-    });
-
-    // Append room images separately
-    formData.rooms.forEach((r, i) => {
-      r.roomDetails.forEach((rd, j) => {
-        rd.images.forEach((file) => {
-          payload.append(`roomImages`, file); // backend can use multer.array('roomImages')
-        });
-      });
-    });
-
-    dispatch(createHotel(payload));
-  };
-
-
-  // ✅ Success / Error Handler
   useEffect(() => {
-    if (success) {
-      alert(success);
-      dispatch(clearMessages());
-      navigate("/hotel");
+    dispatch(fetchCountries());
+    // YE ADD KARO - lead options fetch karo
+    dispatch(getLeadOptions());
+  }, [dispatch]);
+
+  // ---------- Fetch States on Country Change ----------
+  useEffect(() => {
+    if (formik.values.country) {
+      dispatch(fetchStatesByCountry(formik.values.country));
+      dispatch(clearCities());
+      formik.setFieldValue("state", "");
+      formik.setFieldValue("city", "");
+    } else {
+      dispatch(clearStates());
+      dispatch(clearCities());
     }
-    if (error) {
-      alert(error);
-      dispatch(clearMessages());
+  }, [formik.values.country, dispatch]);
+
+  // ---------- Fetch Cities on State Change ----------
+  useEffect(() => {
+    if (formik.values.country && formik.values.state) {
+      dispatch(
+        fetchCitiesByState({
+          countryName: formik.values.country,
+          stateName: formik.values.state,
+        })
+      );
+      formik.setFieldValue("city", "");
+    } else {
+      dispatch(clearCities());
     }
-  }, [success, error, navigate, dispatch]);
+  }, [formik.values.state, formik.values.country, dispatch]);
 
-  // ✅ Stepper Content
-  const renderStepContent = (step) => {
-    switch (step) {
-      case 0: // Basic Info
-        return (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Hotel Name"
-                name="hotelName"
-                value={formData.hotelName}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Hotel Type</InputLabel>
-                <Select
-                  multiple
-                  name="hotelType"
-                  value={formData.hotelType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, hotelType: e.target.value })
-                  }
-                  renderValue={(selected) => (
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                      {selected.map((val) => (
-                        <Chip key={val} label={val} />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {["Resort", "Hotel", "Homestay", "Villa"].map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, status: e.target.value }))
-                  }
-                >
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                multiline
-                rows={3}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Cancellation Policy"
-                name="cancellationPolicy"
-                value={formData.cancellationPolicy}
-                onChange={handleChange}
-                multiline
-                rows={2}
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 1: // Contact Details
-        return (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                value={formData.contactDetails.email}
-                onChange={(e) => handleChange(e, "contactDetails")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Mobile"
-                name="mobile"
-                value={formData.contactDetails.mobile}
-                onChange={(e) => handleChange(e, "contactDetails")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Contact Person"
-                name="contactPerson"
-                value={formData.contactDetails.contactPerson}
-                onChange={(e) => handleChange(e, "contactDetails")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Designation"
-                name="designation"
-                value={formData.contactDetails.designation}
-                onChange={(e) => handleChange(e, "contactDetails")}
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 2: // Location
-        return (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Country"
-                name="country"
-                value={formData.location.country}
-                onChange={(e) => handleChange(e, "location")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="State"
-                name="state"
-                value={formData.location.state}
-                onChange={(e) => handleChange(e, "location")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="City"
-                name="city"
-                value={formData.location.city}
-                onChange={(e) => handleChange(e, "location")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Address"
-                name="address1"
-                value={formData.location.address1}
-                onChange={(e) => handleChange(e, "location")}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="Pincode"
-                name="pincode"
-                value={formData.location.pincode}
-                onChange={(e) => handleChange(e, "location")}
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 3: // Facilities & Images
-        return (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Add Facility (Press Enter)"
-                onKeyDown={handleAddFacility}
-              />
-              <Box mt={2} display="flex" gap={1} flexWrap="wrap">
-                {formData.facilities.map((f, i) => (
-                  <Chip
-                    key={i}
-                    label={f}
-                    onDelete={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        facilities: prev.facilities.filter((x) => x !== f),
-                      }))
-                    }
-                  />
-                ))}
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Button variant="outlined" component="label">
-                Upload Main Image
-                <input
-                  type="file"
-                  hidden
-                  onChange={(e) =>
-                    setFormData({ ...formData, mainImage: e.target.files[0] })
-                  }
-                />
-              </Button>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Google Link"
-                name="googleLink"
-                value={formData.socialMedia.googleLink}
-                onChange={(e) => handleChange(e, "socialMedia")}
-              />
-            </Grid>
-          </Grid>
-        );
-
-      case 4: // Rooms
-        const seasonOptions = ["Summer", "Winter", "Monsoon"];
-        const mealPlanOptions = ["CP", "MAP", "AP", "EP"];
-        const roomTypes = ["Single", "Double", "Triple", "Suite"];
-
-        return (
-          <Grid container spacing={2}>
-            {/* Season */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <FormControl fullWidth>
-                <InputLabel>Season Type</InputLabel>
-                <Select
-                  name="seasonType"
-                  value={formData.rooms[0].seasonType}
-                  onChange={(e) => {
-                    const rooms = [...formData.rooms];
-                    rooms[0].seasonType = e.target.value;
-                    setFormData({ ...formData, rooms });
-                  }}
-                >
-                  {seasonOptions.map((s) => (
-                    <MenuItem key={s} value={s}>{s}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Room Type */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <FormControl fullWidth>
-                <InputLabel>Room Type</InputLabel>
-                <Select
-                  multiple
-                  value={formData.rooms[0].roomDetails[0].roomType}
-                  onChange={(e) => {
-                    const rooms = [...formData.rooms];
-                    rooms[0].roomDetails[0].roomType = e.target.value;
-                    setFormData({ ...formData, rooms });
-                  }}
-                  renderValue={(selected) => selected.join(", ")}
-                >
-                  {roomTypes.map((r) => (
-                    <MenuItem key={r} value={r}>{r}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Meal Plan */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <FormControl fullWidth>
-                <InputLabel>Meal Plan</InputLabel>
-                <Select
-                  value={formData.rooms[0].roomDetails[0].mealPlan}
-                  onChange={(e) => {
-                    const rooms = [...formData.rooms];
-                    rooms[0].roomDetails[0].mealPlan = e.target.value;
-                    // Sync mattressCost
-                    rooms[0].roomDetails[0].mattressCost.mealPlan = e.target.value;
-                    setFormData({ ...formData, rooms });
-                  }}
-                >
-                  {mealPlanOptions.map((m) => (
-                    <MenuItem key={m} value={m}>{m}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Mattress Cost */}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Adult Mattress Cost"
-                value={formData.rooms[0].roomDetails[0].mattressCost.adult}
-                onChange={(e) => {
-                  const rooms = [...formData.rooms];
-                  rooms[0].roomDetails[0].mattressCost.adult = Number(e.target.value);
-                  setFormData({ ...formData, rooms });
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Children Mattress Cost"
-                value={formData.rooms[0].roomDetails[0].mattressCost.children}
-                onChange={(e) => {
-                  const rooms = [...formData.rooms];
-                  rooms[0].roomDetails[0].mattressCost.children = Number(e.target.value);
-                  setFormData({ ...formData, rooms });
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Kid Without Mattress Cost"
-                value={formData.rooms[0].roomDetails[0].mattressCost.kidWithoutMattress}
-                onChange={(e) => {
-                  const rooms = [...formData.rooms];
-                  rooms[0].roomDetails[0].mattressCost.kidWithoutMattress = Number(e.target.value);
-                  setFormData({ ...formData, rooms });
-                }}
-              />
-            </Grid>
-
-            {/* Peak Cost */}
-            <Grid size={{ xs: 12 }}>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  const rooms = [...formData.rooms];
-                  rooms[0].roomDetails[0].peakCost.push({
-                    title: "",
-                    validFrom: "",
-                    validTill: "",
-                    surcharge: 0,
-                    note: "",
-                  });
-                  setFormData({ ...formData, rooms });
-                }}
-              >
-                Add Peak Cost
-              </Button>
-
-              {formData.rooms[0].roomDetails[0].peakCost.map((pc, idx) => (
-                <Grid container spacing={1} key={idx} mt={1}>
-                  <Grid size={{ xs: 12, md: 2 }}>
-                    <TextField
-                      fullWidth
-                      label="Title"
-                      value={pc.title}
-                      onChange={(e) => {
-                        const rooms = [...formData.rooms];
-                        rooms[0].roomDetails[0].peakCost[idx].title = e.target.value;
-                        setFormData({ ...formData, rooms });
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 2 }}>
-                    <TextField
-                      type="date"
-                      fullWidth
-                      label="Valid From"
-                      value={pc.validFrom}
-                      onChange={(e) => {
-                        const rooms = [...formData.rooms];
-                        rooms[0].roomDetails[0].peakCost[idx].validFrom = e.target.value;
-                        setFormData({ ...formData, rooms });
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 2 }}>
-                    <TextField
-                      type="date"
-                      fullWidth
-                      label="Valid Till"
-                      value={pc.validTill}
-                      onChange={(e) => {
-                        const rooms = [...formData.rooms];
-                        rooms[0].roomDetails[0].peakCost[idx].validTill = e.target.value;
-                        setFormData({ ...formData, rooms });
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 2 }}>
-                    <TextField
-                      type="number"
-                      fullWidth
-                      label="Surcharge"
-                      value={pc.surcharge}
-                      onChange={(e) => {
-                        const rooms = [...formData.rooms];
-                        rooms[0].roomDetails[0].peakCost[idx].surcharge = Number(e.target.value);
-                        setFormData({ ...formData, rooms });
-                      }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 4 }}>
-                    <TextField
-                      fullWidth
-                      label="Note"
-                      value={pc.note}
-                      onChange={(e) => {
-                        const rooms = [...formData.rooms];
-                        rooms[0].roomDetails[0].peakCost[idx].note = e.target.value;
-                        setFormData({ ...formData, rooms });
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              ))}
-            </Grid>
-
-            <Grid size={{ xs: 12 }} textAlign="center">
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={
-                  loading ||
-                  !formData.rooms[0].seasonType ||
-                  !formData.rooms[0].roomDetails[0].mealPlan
-                }
-              >
-                {loading ? "Saving..." : "Create Hotel"}
-              </Button>
-            </Grid>
-          </Grid>
-        );
-
-      default:
-        return null;
+  const handleAddFacility = () => {
+    if (newFacility.trim() && !facilityOptions.includes(newFacility)) {
+      const updatedOptions = [...facilityOptions, newFacility];
+      setFacilityOptions(updatedOptions);
+      formik.setFieldValue("facilities", [...tempSelected, newFacility]);
+    } else {
+      formik.setFieldValue("facilities", tempSelected);
     }
+    setNewFacility("");
+    setTempSelected([]);
+    setOpenModal(false);
   };
+
+  const renderField = (name, label, multiline = false, rows = 1) => (
+    <TextField
+      label={label}
+      name={name}
+      fullWidth
+      size="small"
+      required
+      value={formik.values[name]}
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      error={formik.touched[name] && Boolean(formik.errors[name])}
+      helperText={formik.touched[name] && formik.errors[name]}
+      multiline={multiline}
+      rows={rows}
+    />
+  );
 
   return (
-    <Box p={3}>
-      <Typography variant="h5" fontWeight="bold" mb={2}>
-        Create Hotel
-      </Typography>
-
+    <Box p={2}>
       {/* Stepper */}
-      <Stepper activeStep={activeStep} alternativeLabel>
+      <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -625,28 +305,381 @@ const CreateHotel = () => {
         ))}
       </Stepper>
 
-      {/* Step Content */}
-      <Box mt={3}>{renderStepContent(activeStep)}</Box>
+      {loading && <CircularProgress />}
+      {error && <Alert severity="error">{error}</Alert>}
+      {success && <Alert severity="success">{success}</Alert>}
 
-      {/* Step Buttons */}
-      <Box mt={3} display="flex" justifyContent="space-between">
-        <Button
-          disabled={activeStep === 0}
-          onClick={() => setActiveStep((prev) => prev - 1)}
-        >
-          Back
-        </Button>
-        {activeStep < steps.length - 1 && (
-          <Button
-            variant="contained"
-            onClick={() => setActiveStep((prev) => prev + 1)}
-          >
-            Next
+      {/* Step Screens */}
+      {activeStep === 0 && (
+        <Box component="form" onSubmit={formik.handleSubmit}>
+          <Typography variant="h6" gutterBottom>
+            Hotel Entry Form
+          </Typography>
+
+          {/* Hotel Details */}
+          <Box border={1} borderRadius={1} p={2} mb={3}>
+            <Typography variant="subtitle1">Hotel Details</Typography>
+            <Grid container spacing={2} mt={1}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {renderField("hotelName", "Hotel Name")}
+              </Grid>
+
+              {/* Hotel Type with Add New - YE CHANGE KARO */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Hotel Type</InputLabel>
+                  <Select
+                    name="hotelType"
+                    value={formik.values.hotelType}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "__add_new") {
+                        handleOpenDialog("hotelType");
+                      } else {
+                        formik.handleChange(e);
+                      }
+                    }}
+                    onBlur={formik.handleBlur}
+                    error={
+                      formik.touched.hotelType && Boolean(formik.errors.hotelType)
+                    }
+                  >
+                    {getHotelTypeOptions().map((type) => (
+                      type === "__add_new" ? (
+                        <MenuItem key="add_new" value="__add_new" style={{ color: "#1976d2", fontWeight: 500 }}>
+                          + Add New
+                        </MenuItem>
+                      ) : (
+                        <MenuItem key={type} value={type}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                            <span>{type}</span>
+                            {options?.find(opt => opt.fieldName === "hotelType" && opt.value === type) && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const optionToDelete = options.find(
+                                    opt => opt.fieldName === "hotelType" && opt.value === type
+                                  );
+                                  if (optionToDelete && window.confirm(`Delete "${type}"?`)) {
+                                    dispatch(deleteLeadOption(optionToDelete._id));
+                                  }
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </div>
+                        </MenuItem>
+                      )
+                    ))}
+                  </Select>
+                  {formik.touched.hotelType && formik.errors.hotelType && (
+                    <FormHelperText error>
+                      {formik.errors.hotelType}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              <Grid size={{ xs: 12 }}>{renderField("email", "Email")}</Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {renderField("mobile", "Mobile")}
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {renderField("alternateContact", "Alternate Contact")}
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {renderField("designation", "Designation")}
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {renderField("contactPerson", "Contact Person")}
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                {renderField("description", "Hotel Description", true, 2)}
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                {renderField("cancellationPolicy", "Cancellation Policy", true, 2)}
+              </Grid>
+
+              {/* Facilities - Multi Select with Add New - YE CHANGE KARO */}
+              <Grid size={{ xs: 12 }}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Facilities</InputLabel>
+                  <Select
+                    multiple
+                    name="facilities"
+                    value={formik.values.facilities}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value.includes("__add_new")) {
+                        const filtered = value.filter((v) => v !== "__add_new");
+                        formik.setFieldValue("facilities", filtered);
+                        handleOpenDialog("facilities");
+                      } else {
+                        formik.setFieldValue("facilities", value);
+                      }
+                    }}
+                    renderValue={(selected) => selected.join(", ")}
+                    error={
+                      formik.touched.facilities &&
+                      Boolean(formik.errors.facilities)
+                    }
+                  >
+                    {getOptionsForField("facilities").map((option) => (
+                      option.value === "__add_new" ? (
+                        <MenuItem key="add_new" value="__add_new">
+                          <em style={{ color: "#1976d2", fontWeight: 500 }}>+ Add New</em>
+                        </MenuItem>
+                      ) : (
+                        <MenuItem key={option.value} value={option.value}>
+                          <Checkbox
+                            checked={formik.values.facilities.includes(option.value)}
+                          />
+                          <ListItemText
+                            primary={
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                <span>{option.value}</span>
+                                {options?.find(opt => opt.fieldName === "facilities" && opt.value === option.value) && (
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const optionToDelete = options.find(
+                                        opt => opt.fieldName === "facilities" && opt.value === option.value
+                                      );
+                                      if (optionToDelete && window.confirm(`Delete "${option.value}"?`)) {
+                                        dispatch(deleteLeadOption(optionToDelete._id));
+                                      }
+                                    }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                )}
+                              </div>
+                            }
+                          />
+                        </MenuItem>
+                      )
+                    ))}
+                  </Select>
+                  {formik.touched.facilities && formik.errors.facilities && (
+                    <FormHelperText error>
+                      {formik.errors.facilities}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              {/* Main Image Upload */}
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Main Image (1300px X 400px recommended)
+                </Typography>
+                <Button variant="outlined" component="label" fullWidth>
+                  Choose File
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    name="mainImage"
+                    onChange={(event) => {
+                      formik.setFieldValue(
+                        "mainImage",
+                        event.currentTarget.files[0]
+                      );
+                    }}
+                    onBlur={formik.handleBlur}
+                  />
+                </Button>
+                {formik.values.mainImage && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {formik.values.mainImage.name}
+                  </Typography>
+                )}
+                {formik.touched.mainImage && formik.errors.mainImage && (
+                  <Typography variant="caption" color="error">
+                    {formik.errors.mainImage}
+                  </Typography>
+                )}
+              </Grid>
+            </Grid>
+          </Box>
+
+          {/* Rest of your existing code remains same */}
+          {/* Hotel Location */}
+          <Box border={1} borderRadius={1} p={2} mb={3}>
+            <Typography variant="subtitle1">Hotel Location</Typography>
+            <Grid container spacing={2} mt={1}>
+              {/* Country */}
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>Country</InputLabel>
+                  <Select
+                    name="country"
+                    value={formik.values.country}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      formik.setFieldValue("state", "");
+                      formik.setFieldValue("city", "");
+                    }}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.country && Boolean(formik.errors.country)}
+                  >
+                    {countries.map((country) => (
+                      <MenuItem key={country.name} value={country.name}>
+                        {country.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {formik.touched.country && formik.errors.country && (
+                    <FormHelperText error>{formik.errors.country}</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              {/* State */}
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>State</InputLabel>
+                  <Select
+                    name="state"
+                    value={formik.values.state}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      formik.setFieldValue("city", "");
+                    }}
+                    onBlur={formik.handleBlur}
+                    disabled={!formik.values.country}
+                    error={formik.touched.state && Boolean(formik.errors.state)}
+                  >
+                    {states.map((state) => (
+                      <MenuItem key={state.name} value={state.name}>
+                        {state.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {formik.touched.state && formik.errors.state && (
+                    <FormHelperText error>{formik.errors.state}</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              {/* City */}
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel>City</InputLabel>
+                  <Select
+                    name="city"
+                    value={formik.values.city}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    disabled={!formik.values.state}
+                    error={formik.touched.city && Boolean(formik.errors.city)}
+                  >
+                    {cities.map((city) => (
+                      <MenuItem key={city.name} value={city.name}>
+                        {city.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {formik.touched.city && formik.errors.city && (
+                    <FormHelperText error>{formik.errors.city}</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              {/* Address and other fields */}
+              <Grid size={{ xs: 12, sm: 8 }}>
+                {renderField("address", "Address")}
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 4 }}>
+                {renderField("pincode", "Pincode")}
+              </Grid>
+            </Grid>
+          </Box>
+
+          {/* Social Media */}
+          <Box border={1} borderRadius={1} p={2} mb={3}>
+            <Typography variant="subtitle1">Social Media</Typography>
+            <Grid container spacing={2} mt={1}>
+              <Grid size={{ xs: 12 }}>
+                {renderField("googleLink", "Google Link")}
+              </Grid>
+            </Grid>
+          </Box>
+
+          {/* Hotel Policy */}
+          <Box border={1} borderRadius={1} p={2} mb={3}>
+            <Typography variant="subtitle1">Hotel Policy</Typography>
+            {renderField("policy", "Hotel Policy", true, 4)}
+          </Box>
+          <Box textAlign="center">
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              disabled={!formik.isValid || formik.isSubmitting || loading}
+            >
+              {loading ? "Saving..." : "Save & Continue"}
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      {activeStep === 1 && (
+        <HotelFormStep2 hotelId={hotelId} onNext={handleNext} onBack={handleBack} />
+      )}
+      {activeStep === 2 && (
+        <HotelFormStep3 hotelId={hotelId} onNext={handleNext} onBack={handleBack} />
+      )}
+      {activeStep === 3 && <HotelFormStep4 hotelId={hotelId} onBack={handleBack} />}
+
+      {/* YE DIALOG ADD KARO (PackageEntryForm jaise) */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Add New {currentField}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            autoFocus
+            margin="dense"
+            label={`New ${currentField}`}
+            value={addMore}
+            onChange={(e) => setAddMore(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleAddNewItem} variant="contained">Add</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Facility Modal */}
+      <Dialog open={openModal} onClose={() => setOpenModal(false)}>
+        <DialogTitle>Add New Facility</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Facility Name"
+            fullWidth
+            size="small"
+            value={newFacility}
+            onChange={(e) => setNewFacility(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenModal(false)}>Cancel</Button>
+          <Button onClick={handleAddFacility} variant="contained">
+            Add
           </Button>
-        )}
-      </Box>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
-export default CreateHotel;
+export default HotelForm;

@@ -164,6 +164,8 @@ export const uploadDayImage = asyncHandler(async (req, res) => {
     const idx = Number(dayIndex);
     if (isNaN(idx) || idx < 0) return res.status(400).json({ message: "Invalid dayIndex" });
 
+    if (!Array.isArray(pkg.days)) pkg.days = [];
+
     while (pkg.days.length <= idx) {
         pkg.days.push({
             title: "",
@@ -191,7 +193,11 @@ export const getById = asyncHandler(async (req, res) => {
     const packageData = doc.toObject();
     packageData.status = calculateStatus(packageData.validFrom, packageData.validTill);
 
-    packageData.bannerImage = packageData.bannerImage ? `/uploads/${packageData.bannerImage}` : "";
+    packageData.bannerImage = packageData.bannerImage
+        ? packageData.bannerImage.startsWith("http")
+            ? packageData.bannerImage
+            : `/upload/${packageData.bannerImage}`
+        : "/upload/default.jpg";
 
     packageData.days = normalizeDays(packageData.days);
 

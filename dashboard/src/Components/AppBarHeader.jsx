@@ -95,7 +95,7 @@ const DashboardHeader = () => {
           <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
             <Avatar
               variant="square"
-              src="https://iconicyatra.com/assets/img/logo.png"
+              src="http://localhost:5174/assets/img/logo.png"
               sx={{ width: isTablet ? 120 : 140, height: isTablet ? 30 : 40 }}
               alt="IconicYatra Logo"
             />
@@ -236,7 +236,7 @@ const DashboardHeader = () => {
               <MenuItem
                 onClick={() => {
                   localStorage.clear();
-                  window.location.href = "https://iconicyatra.com/login"; //https://iconicyatra.com/login
+                  window.location.href = "http://localhost:5173/login"; //https://iconicyatra.com/login
                 }}
                 sx={{
                   "&:hover": {
