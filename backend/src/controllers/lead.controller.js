@@ -215,26 +215,12 @@ export const createLead = asyncHandler(async (req, res) => {
     status: "Active",
   });
 
-  await sendLeadThankYou({
-    fullName,
-    email,
-    tourDestination,
-    arrivalDate,
-    arrivalCity: arrivalCityToSave,
-    arrivalLocation: arrivalLocationToSave,
-    departureDate,
-    departureCity: departureCityToSave,
-    departureLocation: departureLocationToSave,
-    members,
-    accommodation,
-    leadId
-  });
-
-
   return res
     .status(201)
-    .json(new ApiResponse(201, newLead, "Lead created successfully & email sent"));
+    .json(new ApiResponse(201, newLead, "Lead created successfully"));
 });
+
+
 
 // view Lead
 export const viewAllLeads = asyncHandler(async (req, res) => {
@@ -395,7 +381,7 @@ export const viewAllLeadsReports = asyncHandler(async (req, res) => {
 
 // Delete Lead
 export const deleteLead = asyncHandler(async (req, res) => {
-  const { leadId } = req.body;
+  const { leadId } = req.params;
 
   if (!leadId) {
     throw new ApiError(400, "leadId is required");
@@ -431,7 +417,8 @@ export const changeLeadStatus = asyncHandler(async (req, res) => {
   const { leadId } = req.params;
   const { status } = req.body;
 
-  const allowedStatuses = ['Active', 'Cancelled', 'Confirm'];
+  // FIX: Change 'Confirm' to 'Confirmed' to match frontend and error message
+  const allowedStatuses = ['Active', 'Cancelled', 'Confirmed'];
 
   if (!leadId) {
     throw new ApiError(400, "leadId is required");
@@ -448,7 +435,6 @@ export const changeLeadStatus = asyncHandler(async (req, res) => {
   }
 
   const currentStatus = lead.status;
-
 
   if (currentStatus === 'Cancelled') {
     throw new ApiError(400, "Cancelled lead cannot be changed to another status");

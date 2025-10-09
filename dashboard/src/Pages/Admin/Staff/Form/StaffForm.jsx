@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -17,23 +17,18 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import dayjs from "dayjs";
 import StaffFormDetail from "./StaffFormDetail";
-import { useDispatch } from "react-redux";
-import { createStaff } from "../../../../features/staff/staffSlice"
+import { useDispatch, useSelector } from "react-redux";
+import { createStaff } from "../../../../features/staff/staffSlice";
+import {
+  fetchCountries,
+  fetchStatesByCountry,
+  fetchCitiesByState,
+  clearStates,
+  clearCities,
+} from "../../../../features/location/locationSlice";
+
 const titles = ["Mr", "Mrs", "Ms", "Dr"];
-const roles = ["Admin", "Superadmin", "Executive"];
-const countries = ["India", "USA"];
-const states = {
-  India: ["Maharashtra", "Delhi", "Karnataka"],
-  USA: ["California", "New York", "Texas"],
-};
-const cities = {
-  Maharashtra: ["Mumbai", "Pune"],
-  Delhi: ["New Delhi"],
-  Karnataka: ["Bangalore"],
-  California: ["Los Angeles", "San Francisco"],
-  "New York": ["New York City"],
-  Texas: ["Houston"],
-};
+const roles = ["Admin", "Manager", "Executive"];
 
 const validationSchema = Yup.object().shape({
   fullName: Yup.string().required("Required"),
@@ -58,75 +53,23 @@ const StaffForm = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // const handleFinalSubmit = () => {
-  //   const formattedData = {
-  //     personalDetails: {
-  //       title: values.title,
-  //       firstName: values.fullName.split(" ")[0] || "",
-  //       lastName: values.fullName.split(" ").slice(1).join(" ") || "",
-  //       mobileNumber: values.mobile,
-  //       alternateContact: values.alternateContact,
-  //       designation: values.designation,
-  //       userRole: values.userRole,
-  //       email: values.email,
-  //       dob: values.dob,
-  //     },
-  //     staffLocation: {
-  //       country: values.country,
-  //       state: values.state,
-  //       city: values.city,
-  //     },
-  //     address: {
-  //       address1: values.address1,
-  //       address2: values.address2,
-  //       address3: values.address3,
-  //       pincode: values.pincode,
-  //     },
-  //     firm: {
-  //       firmType: values.firmType,
-  //       gstin: values.gstin,
-  //       cin: values.cin,
-  //       pan: values.pan,
-  //       turnover: values.turnover,
-  //       firmName: values.firmName,
-  //       firmDescription: values.firmDescription,
-  //       sameAsContact: values.sameAsContact,
-  //       address1: values.firmAddress1,
-  //       address2: values.firmAddress2,
-  //       address3: values.firmAddress3,
-  //       supportingDocs: values.supportingDocs,
-  //     },
+  const {
+    countries: countriesData,
+    states: statesData,
+    cities: citiesData,
+    loading,
+  } = useSelector((state) => state.location);
 
-  //     bank: {
-  //       bankName: values.bankName,
-  //       branchName: values.branchName,
-  //       //nameOfBranch: values.nameOfBranch,
-  //       accountHolderName: values.accountHolderName,
-  //       accountNumber: values.accountNumber,
-  //       ifscCode: values.ifscCode,
-  //     }
-
-  //   };
-
-  //   dispatch(createStaff(formattedData))
-  //     .unwrap()
-  //     .then(() => {
-  //       navigate("/staff"); // or wherever you want
-  //     })
-  //     .catch((err) => {
-  //       console.error("Staff creation failed:", err);
-  //     });
-  // };
-
+  // Initialize formik FIRST
   const formik = useFormik({
     initialValues: {
+      title: "",
       fullName: "",
       mobile: "",
       alternateContact: "",
       designation: "",
       userRole: "",
       email: "",
-      title: "",
       dob: null,
 
       // Staff Address
@@ -148,7 +91,7 @@ const StaffForm = () => {
       firmDescription: "",
       sameAsContact: false,
       supportingDocs: null,
-      firmAddress1: "",  // 👈 rename
+      firmAddress1: "",
       firmAddress2: "",
       firmAddress3: "",
 
@@ -160,74 +103,17 @@ const StaffForm = () => {
       ifscCode: "",
       nameOfBranch: "",
     },
-
     validationSchema,
     onSubmit: (values) => {
       if (step === 1) {
         setStep(2);
       } else {
-        const formattedData = {
-          personalDetails: {
-            fullName: values.fullName,
-            title: values.title,
-            firstName: values.fullName.split(" ")[0] || "",
-            lastName: values.fullName.split(" ").slice(1).join(" ") || "",
-            mobileNumber: values.mobile,
-            alternateContact: values.alternateContact,
-            designation: values.designation,
-            userRole: values.userRole,
-            email: values.email,
-            dob: values.dob,
-          },
-          staffLocation: {
-            country: values.country,
-            state: values.state,
-            city: values.city,
-          },
-          address: {
-            addressLine1: values.address1,
-            addressLine2: values.address2,
-            addressLine3: values.address3,
-            pincode: values.pincode,
-          },
-          firm: {
-            firmType: values.firmType,
-            gstin: values.gstin,
-            cin: values.cin,
-            pan: values.pan,
-            turnover: values.turnover,
-            firmName: values.firmName,
-            firmDescription: values.firmDescription,
-            sameAsContact: values.sameAsContact,
-            address1: values.address1,
-            address2: values.address2,
-            address3: values.address3,
-            supportingDocs: values.supportingDocs,
-          },
-          bank: {
-            bankName: values.bankName,
-            branchName: values.branchName,
-            accountHolderName: values.accountHolderName,
-            accountNumber: values.accountNumber,
-            ifscCode: values.ifscCode,
-          },
-        };
-
-        dispatch(createStaff(formattedData))
-          .unwrap()
-          .then(() => {
-            navigate("/staff");
-          })
-          .catch((err) => {
-            console.error("Staff creation failed:", err);
-          });
+        handleFinalSubmit(values);
       }
-    }
-
-
-    ,
+    },
   });
 
+  // NOW destructure formik after initialization
   const {
     values,
     errors,
@@ -238,7 +124,110 @@ const StaffForm = () => {
     resetForm,
   } = formik;
 
+  // Use effects that depend on formik values should come AFTER formik initialization
+  useEffect(() => {
+    dispatch(fetchCountries());
+  }, [dispatch]);
 
+  useEffect(() => {
+    if (values.country) {
+      dispatch(fetchStatesByCountry(values.country));
+      setFieldValue("state", "");
+      setFieldValue("city", "");
+      dispatch(clearCities());
+    } else {
+      dispatch(clearStates());
+      dispatch(clearCities());
+    }
+  }, [values.country, dispatch, setFieldValue]);
+
+  useEffect(() => {
+    if (values.state && values.country) {
+      dispatch(
+        fetchCitiesByState({
+          countryName: values.country,
+          stateName: values.state,
+        })
+      );
+    } else {
+      dispatch(clearCities());
+    }
+  }, [values.state, values.country, dispatch]);
+
+  const handleFinalSubmit = (values) => {
+    const formattedData = {
+      personalDetails: {
+        title: values.title,
+        firstName: values.fullName.split(" ")[0] || "",
+        lastName: values.fullName.split(" ").slice(1).join(" ") || "",
+        fullName: values.fullName,
+        mobileNumber: values.mobile,
+        alternateContact: values.alternateContact,
+        designation: values.designation,
+        userRole: values.userRole,
+        email: values.email,
+        dob: values.dob ? new Date(values.dob) : null,
+      },
+      staffLocation: {
+        country: values.country,
+        state: values.state,
+        city: values.city,
+      },
+      address: {
+        addressLine1: values.address1,
+        addressLine2: values.address2,
+        addressLine3: values.address3,
+        pincode: values.pincode,
+      },
+      firm: {
+        firmType: values.firmType,
+        gstin: values.gstin,
+        cin: values.cin,
+        pan: values.pan,
+        turnover: values.turnover,
+        firmName: values.firmName,
+        firmDescription: values.firmDescription,
+        sameAsContact: values.sameAsContact,
+        address1: values.firmAddress1,
+        address2: values.firmAddress2,
+        address3: values.firmAddress3,
+        supportingDocs: values.supportingDocs,
+      },
+      bank: {
+        bankName: values.bankName,
+        branchName: values.branchName,
+        accountHolderName: values.accountHolderName,
+        accountNumber: values.accountNumber,
+        ifscCode: values.ifscCode,
+      },
+    };
+
+    dispatch(createStaff(formattedData))
+      .unwrap()
+      .then(() => {
+        navigate("/staff");
+      })
+      .catch((err) => {
+        console.error("Staff creation failed:", err);
+      });
+  };
+
+  // Helper function to render select options
+  const renderSelectOptions = (options, loadingText = "Loading...") => {
+    if (loading) {
+      return <MenuItem disabled>{loadingText}</MenuItem>;
+    }
+
+    if (!options || options.length === 0) {
+      return <MenuItem disabled>No options available</MenuItem>;
+    }
+
+    return options.map((option) => (
+      <MenuItem key={option} value={option}>
+        {option}
+      </MenuItem>
+    ));
+  };
 
   return (
     <Box p={3}>
@@ -261,12 +250,9 @@ const StaffForm = () => {
                       name="title"
                       value={values.title}
                       onChange={handleChange}
+                      label="Title"
                     >
-                      {titles.map((title) => (
-                        <MenuItem key={title} value={title}>
-                          {title}
-                        </MenuItem>
-                      ))}
+                      {renderSelectOptions(titles)}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -288,6 +274,7 @@ const StaffForm = () => {
                     name="mobile"
                     label="Mobile Number"
                     fullWidth
+                    required
                     value={values.mobile}
                     onChange={handleChange}
                     error={touched.mobile && Boolean(errors.mobile)}
@@ -326,12 +313,9 @@ const StaffForm = () => {
                       name="userRole"
                       value={values.userRole}
                       onChange={handleChange}
+                      label="User Role"
                     >
-                      {roles.map((role) => (
-                        <MenuItem key={role} value={role}>
-                          {role}
-                        </MenuItem>
-                      ))}
+                      {renderSelectOptions(roles)}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -342,6 +326,8 @@ const StaffForm = () => {
                     fullWidth
                     value={values.email}
                     onChange={handleChange}
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
                   />
                 </Grid>
 
@@ -365,8 +351,12 @@ const StaffForm = () => {
                 Staff's Location
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 4 }}>
-                  <FormControl fullWidth required>
+                <Grid size={{ xs: 3 }}>
+                  <FormControl
+                    fullWidth
+                    required
+                    error={touched.country && Boolean(errors.country)}
+                  >
                     <InputLabel>Country</InputLabel>
                     <Select
                       name="country"
@@ -376,17 +366,21 @@ const StaffForm = () => {
                         setFieldValue("state", "");
                         setFieldValue("city", "");
                       }}
+                      label="Country"
                     >
-                      {countries.map((c) => (
-                        <MenuItem key={c} value={c}>
-                          {c}
-                        </MenuItem>
-                      ))}
+                      {renderSelectOptions(
+                        countriesData?.map((c) => c.name),
+                        "Loading countries..."
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <FormControl fullWidth required>
+                <Grid size={{ xs: 3 }}>
+                  <FormControl
+                    fullWidth
+                    required
+                    error={touched.state && Boolean(errors.state)}
+                  >
                     <InputLabel>State</InputLabel>
                     <Select
                       name="state"
@@ -395,30 +389,34 @@ const StaffForm = () => {
                         handleChange(e);
                         setFieldValue("city", "");
                       }}
-                      disabled={!values.country}
+                      disabled={!values.country || loading}
+                      label="State"
                     >
-                      {(states[values.country] || []).map((s) => (
-                        <MenuItem key={s} value={s}>
-                          {s}
-                        </MenuItem>
-                      ))}
+                      {renderSelectOptions(
+                        statesData?.map((s) => s.name),
+                        "Loading states..."
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <FormControl fullWidth required>
+                <Grid size={{ xs: 3 }}>
+                  <FormControl
+                    fullWidth
+                    required
+                    error={touched.city && Boolean(errors.city)}
+                  >
                     <InputLabel>City</InputLabel>
                     <Select
                       name="city"
                       value={values.city}
                       onChange={handleChange}
-                      disabled={!values.state}
+                      disabled={!values.state || loading}
+                      label="City"
                     >
-                      {(cities[values.state] || []).map((c) => (
-                        <MenuItem key={c} value={c}>
-                          {c}
-                        </MenuItem>
-                      ))}
+                      {renderSelectOptions(
+                        citiesData?.map((c) => c.name),
+                        "Loading cities..."
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -431,7 +429,7 @@ const StaffForm = () => {
                 Address
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}>
+                <Grid size={{ xs: 6 }}>
                   <TextField
                     name="address1"
                     label="Address Line 1"
@@ -441,7 +439,7 @@ const StaffForm = () => {
                     onChange={handleChange}
                   />
                 </Grid>
-                <Grid size={{ xs: 12 }}>
+                <Grid size={{ xs: 6 }}>
                   <TextField
                     name="address2"
                     label="Address Line 2"
@@ -494,7 +492,6 @@ const StaffForm = () => {
             </Box>
           </>
         )}
-
 
         <Box display="flex" gap={2} justifyContent="center" mt={3}>
           {step === 1 && (

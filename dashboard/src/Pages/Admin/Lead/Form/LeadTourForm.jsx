@@ -126,6 +126,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
         transport: values.transport === "Yes",
         servicesRequired: [values.services],               // ✅ Fix 2
         hotelType: [values.hotelType],
+        tourDestination: values.destination,
         arrivalDate: values.arrivalDate
           ? dayjs(values.arrivalDate).format("YYYY-MM-DD")
           : null,
@@ -502,7 +503,23 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
             Pickup/Drop
           </Typography>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <DatePicker
+                label="Arrival Date *"
+                value={values.arrivalDate}
+                onChange={(val) => setFieldValue("arrivalDate", val)}
+
+                renderInput={(params) => (
+                  <TextField
+                    fullWidth
+                    {...params}
+                    error={touched.arrivalDate && Boolean(errors.arrivalDate)}
+                    helperText={touched.arrivalDate && errors.arrivalDate}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -530,7 +547,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -560,24 +577,26 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+
+            <Grid size={{ xs: 12, md: 3 }}>
               <DatePicker
-                label="Arrival Date *"
-                value={values.arrivalDate}
-                onChange={(val) => setFieldValue("arrivalDate", val)}
-                minDate={dayjs()}
+                label="Departure Date *"
+                value={values.departureDate}
+                onChange={(val) => setFieldValue("departureDate", val)}
+                minDate={values.arrivalDate || dayjs()}
                 renderInput={(params) => (
                   <TextField
                     fullWidth
                     {...params}
-                    error={touched.arrivalDate && Boolean(errors.arrivalDate)}
-                    helperText={touched.arrivalDate && errors.arrivalDate}
+                    error={
+                      touched.departureDate && Boolean(errors.departureDate)
+                    }
+                    helperText={touched.departureDate && errors.departureDate}
                   />
                 )}
               />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -605,7 +624,7 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                 )}
               </TextField>
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -636,24 +655,6 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                   )
                 )}
               </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <DatePicker
-                label="Departure Date *"
-                value={values.departureDate}
-                onChange={(val) => setFieldValue("departureDate", val)}
-                minDate={values.arrivalDate || dayjs()}
-                renderInput={(params) => (
-                  <TextField
-                    fullWidth
-                    {...params}
-                    error={
-                      touched.departureDate && Boolean(errors.departureDate)
-                    }
-                    helperText={touched.departureDate && errors.departureDate}
-                  />
-                )}
-              />
             </Grid>
           </Grid>
         </Box>
@@ -720,6 +721,24 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl>
+                <FormLabel>Transport</FormLabel>
+                <RadioGroup
+                  row
+                  name="transport"
+                  value={values.transport}
+                  onChange={handleChange}
+                >
+                  <FormControlLabel
+                    value="Yes"
+                    control={<Radio />}
+                    label="Yes"
+                  />
+                  <FormControlLabel value="No" control={<Radio />} label="No" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 select
                 fullWidth
@@ -746,24 +765,6 @@ const LeadTourForm = ({ leadData, onComplete, isSubmitting }) => {
                   )
                 )}
               </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl>
-                <FormLabel>Transport</FormLabel>
-                <RadioGroup
-                  row
-                  name="transport"
-                  value={values.transport}
-                  onChange={handleChange}
-                >
-                  <FormControlLabel
-                    value="Yes"
-                    control={<Radio />}
-                    label="Yes"
-                  />
-                  <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-              </FormControl>
             </Grid>
             <Grid size={{ xs: 4 }}>
               <TextField

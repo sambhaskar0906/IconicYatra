@@ -38,6 +38,7 @@ import FlightFinalize from "../Pages/Admin/Quotation/FlightQuotation/FlightFinal
 import VehicleFinalize from "../Pages/Admin/Quotation/VehicleQuotation/VehicleFinalize";
 import HotelFinalize from "../Pages/Admin/Quotation/HotelQuotation/HotelFinalize";
 import Profile from "../Pages/Admin/Profile/Profile";
+import StaffEditForm from "../Pages/Admin/Staff/Form/EditStaff";
 
 const MainRoute = () => {
     const location = useLocation();
@@ -164,12 +165,15 @@ const MainRoute = () => {
                 <Route path="/packageform" element={<MultiStepPackageForm />} />
                 <Route path="/tourpackage/packageeditform/:id" element={<PackageEditForm />} />
 
-                <Route path="/associates" element={<AssociatesCard />} />
-                <Route path="/associatesform" element={<AssociatesForm />} />
-                <Route path="/associates/associateseditform" element={<AssociatesEditFrom />} />
+                <Route path='/associates' element={<AssociatesCard />} />
+                <Route path='/associatesform' element={<AssociatesForm />} />
+                <Route path='/associates/associateseditform/:associateId' element={<AssociatesEditFrom />} />
 
+                {/* Staff Routes */}
                 <Route path="/staff" element={<StaffCard />} />
                 <Route path="/staffform" element={<StaffForm />} />
+                <Route path="/staff/staffeditform/:staffId" element={<StaffEditForm />} />
+
 
                 <Route path="/payments" element={<PaymentsCard />} />
                 <Route path="/payments-form" element={<PaymentsForm />} />
