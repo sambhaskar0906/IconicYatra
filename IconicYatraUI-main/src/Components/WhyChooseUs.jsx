@@ -5,32 +5,41 @@ import {
   Typography,
   Paper,
 } from "@mui/material";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import { useNavigate } from "react-router-dom";
+
+// Icons
+import VpnLockIcon from "@mui/icons-material/VpnLock";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
+import PublicIcon from "@mui/icons-material/Public";
 
 const features = [
   {
     title: "Safe and Secure Travel",
     description:
       "A safe and secure journey is our top priority — ensuring peace of mind every step of the way.",
+    icon: <VpnLockIcon sx={{ fontSize: 30 }} />,
     path: "/safe-and-secure-travel",
   },
   {
     title: "100% Guaranteed Services",
     description:
       "We go the extra mile to make your holidays seamless, reliable, and worry-free.",
+    icon: <VerifiedUserIcon sx={{ fontSize: 30 }} />,
     path: "/guaranteed-services",
   },
   {
     title: "100% Satisfaction",
     description:
       "Your happiness is our goal — personalized services designed just for you.",
+    icon: <EmojiEmotionsIcon sx={{ fontSize: 30 }} />,
     path: "/satisfaction",
   },
   {
     title: "Reliable & Trusted Travel Agency",
     description:
       "With years of expertise, Iconic Yatra is your reliable travel partner.",
+    icon: <PublicIcon sx={{ fontSize: 30 }} />,
     path: "/reliable-and-trusted-agency",
   },
 ];
@@ -73,9 +82,9 @@ const WhyChooseUs = () => {
       </Box>
 
       {/* Features Grid */}
-      <Grid container spacing={6} justifyContent="center">
+      <Grid container spacing={3} justifyContent="center">
         {features.map((item, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid size={{ xs: 12, md: 3, sm: 6 }} key={index}>
             <Box
               onClick={() => navigate(item.path)}
               sx={{
@@ -107,7 +116,7 @@ const WhyChooseUs = () => {
                   },
                 }}
               >
-                <AttachMoneyIcon sx={{ fontSize: 30 }} />
+                {item.icon}
               </Paper>
 
               {/* Title */}

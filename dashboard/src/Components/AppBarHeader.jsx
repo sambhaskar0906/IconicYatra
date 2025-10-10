@@ -236,7 +236,7 @@ const DashboardHeader = () => {
               <MenuItem
                 onClick={() => {
                   localStorage.clear();
-                  window.location.href = "http://localhost:5173/login"; //https://iconicyatra.com/login
+                  window.location.href = "https://iconicyatra.com/login"; //https://iconicyatra.com/login
                 }}
                 sx={{
                   "&:hover": {

@@ -121,7 +121,7 @@ const PackageDetail = () => {
                 packageData.bannerImage
                   ? packageData.bannerImage.startsWith("http")
                     ? packageData.bannerImage
-                    : `http://localhost:5000${packageData.bannerImage.startsWith("/") ? "" : "/upload/"}${packageData.bannerImage}`
+                    : `https://api.iconicyatra.com${packageData.bannerImage.startsWith("/") ? "" : "/upload/"}${packageData.bannerImage}`
                   : "https://via.placeholder.com/800x400?text=No+Image"
               }
               alt={packageData.title}
@@ -212,7 +212,7 @@ const PackageDetail = () => {
                         day.dayImage && day.dayImage.trim() !== ""
                           ? day.dayImage.startsWith("http")
                             ? day.dayImage
-                            : `http://localhost:5000/upload/${day.dayImage}`
+                            : `https://api.iconicyatra.com/upload/${day.dayImage}`
                           : "https://via.placeholder.com/300x200?text=No+Image"
                       }
                       alt={day.title}

@@ -72,7 +72,7 @@ const PackageEditView = () => {
 
   useEffect(() => {
     if (current) {
-      const UPLOAD_URL = "http://localhost:5000/upload";
+      const UPLOAD_URL = "https://api.iconicyatra.com/upload";
 
       // Hotels ke prices direct pick karo
       let hotelCosts = { Standard: 0, Deluxe: 0, Superior: 0 };
@@ -524,7 +524,7 @@ const PackageEditView = () => {
                           setPkg((prev) => ({
                             ...prev,
                             bannerImage: res.package?.bannerImage
-                              ? `http://localhost:5000/upload/${res.package.bannerImage.split("/").pop()}`
+                              ? `https://api.iconicyatra.com/upload/${res.package.bannerImage.split("/").pop()}`
                               : prev.bannerImage,
                           }));
                         })

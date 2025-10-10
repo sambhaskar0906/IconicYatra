@@ -144,8 +144,17 @@ const AboutUs = () => {
       >
         <Container sx={{ position: "relative", zIndex: 2 }}>
           <Chip
-            icon={<Star color="white" />}
-            label="Since of 2021"
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                {/* 3 Stars */}
+                {[...Array(3)].map((_, i) => (
+                  <Star key={i} sx={{ color: "gold", fontSize: 20 }} />
+                ))}
+                <Typography component="span" sx={{ color: "white", ml: 1 }}>
+                  Since of 2021
+                </Typography>
+              </Box>
+            }
             sx={{
               bgcolor: "rgba(255,255,255,0.2)",
               color: "white",
@@ -153,7 +162,8 @@ const AboutUs = () => {
               backdropFilter: "blur(10px)",
               fontSize: { xs: "0.875rem", sm: "1rem" },
               py: { xs: 1, sm: 2 },
-              px: { xs: 1, sm: 2 },
+              px: { xs: 1.5, sm: 2.5 },
+              borderRadius: "24px",
             }}
           />
           <Typography
