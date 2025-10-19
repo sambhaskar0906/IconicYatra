@@ -45,7 +45,7 @@ const MainRoutes = () => {
     <Routes>
       {/* Exact paths first */}
       <Route path="/" element={<Layout><Home /></Layout>} />
-      <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+      <Route path="/admin/login" element={<Layout><LoginPage /></Layout>} />
 
       {/* Package detail route - should come before other dynamic routes */}
       <Route path="/package/:packageId" element={<Layout><PackageDetail /></Layout>} />

@@ -56,10 +56,14 @@ const PackageEntryForm = ({ onNext, initialData }) => {
   useEffect(() => {
     dispatch(fetchCountries());
     dispatch(getLeadOptions());
-  }, [dispatch]);
 
-  // REMOVED the problematic useEffect - cities should only be fetched when a state is selected
-  // NOT when tourType changes
+    // ✅ FIX: Fetch Indian states immediately when component loads with Domestic tour type
+    if (tourType === "Domestic") {
+      dispatch(fetchStatesByCountry("India"));
+      formik.setFieldValue("destinationCountry", "India");
+      setSelectedCountry("India");
+    }
+  }, [dispatch, tourType]); // ✅ Added tourType dependency
 
   const formik = useFormik({
     initialValues: {
@@ -115,6 +119,7 @@ const PackageEntryForm = ({ onNext, initialData }) => {
     if (selectedType === "Domestic") {
       formik.setFieldValue("destinationCountry", "India");
       setSelectedCountry("India");
+      // ✅ FIX: Immediately fetch Indian states when switching to Domestic
       dispatch(fetchStatesByCountry("India"));
     } else {
       formik.setFieldValue("destinationCountry", "");
@@ -285,9 +290,16 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                     label="Sector (State)"
                     error={formik.touched.sector && Boolean(formik.errors.sector)}
                     helperText={formik.touched.sector && formik.errors.sector}
+                    placeholder={states.length === 0 ? "Loading states..." : "Select state"}
                   />
                 )}
+                disabled={states.length === 0}
               />
+              {states.length === 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  Loading Indian states...
+                </Typography>
+              )}
             </Grid>
           )}
 
@@ -335,9 +347,16 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                       label="State"
                       error={formik.touched.sector && Boolean(formik.errors.sector)}
                       helperText={formik.touched.sector && formik.errors.sector}
+                      placeholder={states.length === 0 ? "Select country first" : "Select state"}
                     />
                   )}
+                  disabled={states.length === 0}
                 />
+                {states.length === 0 && formik.values.destinationCountry && (
+                  <Typography variant="caption" color="text.secondary">
+                    Loading states for {formik.values.destinationCountry}...
+                  </Typography>
+                )}
               </Grid>
             </>
           )}
@@ -426,6 +445,7 @@ const PackageEntryForm = ({ onNext, initialData }) => {
                   value={searchText}
                   onChange={handleSearch}
                   sx={{ mt: 1 }}
+                  disabled={!formik.values.sector}
                 />
                 <Box
                   sx={{

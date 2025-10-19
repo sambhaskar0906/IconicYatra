@@ -37,7 +37,7 @@ const LoginPage = () => {
         localStorage.setItem("token", token);
         const encodedUser = encodeURIComponent(JSON.stringify(user));
 
-        window.location.href = `https://admin.iconicyatra.com/?token=${token}&user=${encodedUser}`;
+        window.location.href = `http://localhost:5174/?token=${token}&user=${encodedUser}`;
       }
     });
   };

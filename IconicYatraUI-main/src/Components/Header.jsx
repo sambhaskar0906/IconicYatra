@@ -135,7 +135,7 @@ const Header = () => {
               />
 
               {/* Admin */}
-              <Typography
+              {/* <Typography
                 variant="body2"
                 onClick={() => navigate("/login")}
                 sx={{
@@ -147,7 +147,7 @@ const Header = () => {
                 }}
               >
                 Admin
-              </Typography>
+              </Typography> */}
             </Stack>
           </Toolbar>
         </Container>

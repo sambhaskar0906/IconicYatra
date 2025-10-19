@@ -84,7 +84,7 @@ const MainRoute = () => {
                 localStorage.clear();
                 setIsAuthenticated(false);
                 setShowExpiryAlert(false);
-                window.location.href = "https://iconicyatra.com/login";
+                window.location.href = "https://iconicyatra.com/admin/login";
                 return;
             }
 
@@ -132,7 +132,7 @@ const MainRoute = () => {
             );
         } else {
             // New user, directly redirect to login page without showing alert
-            window.location.href = "https://iconicyatra.com/login";
+            window.location.href = "https://iconicyatra.com/admin/login";
             return null;
         }
     }

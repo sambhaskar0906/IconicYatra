@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // 🔹 Change this to your live URL when deploying
-export const BASE_URL = "https://api.iconicyatra.com"; // ✅ export added
+export const BASE_URL = "http://localhost:5000"; // ✅ export added
 
 // User APIs
 export const axiosInstance = axios.create({

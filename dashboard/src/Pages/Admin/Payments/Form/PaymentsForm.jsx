@@ -16,15 +16,16 @@ import {
     RadioGroup,
     FormControlLabel,
     FormLabel,
+    Link,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 
 const accountTypes = ['Savings', 'Current', 'Credit'];
-const partyNames = ['Party A', 'Party B', 'Party C'];
+const partyNames = ['Dharamveer Singh', 'Party B', 'Party C'];
 const paymentModes = ['Cash', 'Cheque', 'UPI', 'Bank Transfer'];
-
+const paymentLink = 'https://iconicyatra.com/payment';
 
 const PaymentsForm = () => {
     const navigate = useNavigate();
@@ -42,16 +43,22 @@ const PaymentsForm = () => {
             reference: '',
             particulars: '',
             amount: '',
+            paymentLinkUsed: false, // New field to track if payment link was used
         },
         validationSchema: Yup.object({
             date: Yup.string().required('Date is required'),
-            screenshot: Yup.mixed().required('Screenshot is required'),
+            screenshot: Yup.mixed().nullable(),
             accountType: Yup.string().required('Select account type'),
             partyName: Yup.string().required('Select party name'),
             paymentMode: Yup.string().required('Select payment mode'),
-            reference: Yup.string().required('Reference is required'),
-            particulars: Yup.string().required('Particulars required'),
+            reference: Yup.string().when('voucherType', {
+                is: 'receive',
+                then: (schema) => schema.required('Reference is required for receipt'),
+                otherwise: (schema) => schema.notRequired()
+            }),
+            particulars: Yup.string(),
             amount: Yup.number().typeError('Amount must be a number').required('Enter amount'),
+            paymentLinkUsed: Yup.boolean(),
         }),
         onSubmit: (values) => {
             const formData = {
@@ -60,7 +67,8 @@ const PaymentsForm = () => {
                 type: voucherType === 'receive' ? 'Cr' : 'Dr',
                 screenshot: previewImage,
                 receipt: getNextReceiptNumber(),
-                invoice: getNextInvoiceNumber()
+                invoice: getNextInvoiceNumber(),
+                paymentLink: voucherType === 'payment' ? paymentLink : null, // Store payment link for PDF
             };
 
             // Save to localStorage
@@ -83,6 +91,19 @@ const PaymentsForm = () => {
         const current = parseInt(localStorage.getItem('invoiceCounter') || '0', 10) + 1;
         localStorage.setItem('invoiceCounter', current);
         return `INV-${String(current).padStart(3, '0')}`;
+    };
+
+    const handlePaymentLinkClick = () => {
+        // Mark that payment link was used
+        formik.setFieldValue('paymentLinkUsed', true);
+
+        // Open payment link in new tab
+        window.open(paymentLink, '_blank');
+
+        // Optional: Add reference automatically
+        if (!formik.values.reference) {
+            formik.setFieldValue('reference', `Online-Payment-${Date.now()}`);
+        }
     };
 
     return (
@@ -131,7 +152,7 @@ const PaymentsForm = () => {
 
                         <Grid size={{ xs: 12, md: 6 }}>
                             <Button variant="contained" component="label" fullWidth color="secondary">
-                                Upload Screenshot
+                                Upload Screenshot (Optional)
                                 <input
                                     type="file"
                                     hidden
@@ -144,15 +165,12 @@ const PaymentsForm = () => {
                                             const reader = new FileReader();
                                             reader.onloadend = () => setPreviewImage(reader.result);
                                             reader.readAsDataURL(file);
+                                        } else {
+                                            setPreviewImage(null);
                                         }
                                     }}
                                 />
                             </Button>
-                            {formik.touched.screenshot && formik.errors.screenshot && (
-                                <Typography color="error" variant="caption">
-                                    {formik.errors.screenshot}
-                                </Typography>
-                            )}
                             {previewImage && (
                                 <Box mt={1}>
                                     <Typography variant="caption">Preview:</Typography>
@@ -218,18 +236,21 @@ const PaymentsForm = () => {
                             </FormControl>
                         </Grid>
 
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                fullWidth
-                                label="Reference / Cash / Cheque"
-                                name="reference"
-                                value={formik.values.reference}
-                                onChange={formik.handleChange}
-                                error={formik.touched.reference && Boolean(formik.errors.reference)}
-                                helperText={formik.touched.reference && formik.errors.reference}
-                                sx={{ bgcolor: 'white' }}
-                            />
-                        </Grid>
+                        {/* Reference Field - Only for Receive Voucher */}
+                        {voucherType === 'receive' && (
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Reference / Cash / Cheque"
+                                    name="reference"
+                                    value={formik.values.reference}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.reference && Boolean(formik.errors.reference)}
+                                    helperText={formik.touched.reference && formik.errors.reference}
+                                    sx={{ bgcolor: 'white' }}
+                                />
+                            </Grid>
+                        )}
 
                         <Grid size={{ xs: 12 }}>
                             <TextField
@@ -245,6 +266,44 @@ const PaymentsForm = () => {
                                 sx={{ bgcolor: 'white' }}
                             />
                         </Grid>
+
+                        {/* Payment Link - Only show for Payment Voucher */}
+                        {voucherType === 'payment' && (
+                            <Grid size={{ xs: 12 }}>
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        border: '1px dashed #1976d2',
+                                        borderRadius: 2,
+                                        backgroundColor: '#e3f2fd',
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    <Typography variant="h6" color="primary" gutterBottom>
+                                        Online Payment Link
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={handlePaymentLinkClick}
+                                        sx={{ mb: 1 }}
+                                    >
+                                        Pay Now via Iconic Yatra
+                                    </Button>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Click above to make payment through secure gateway
+                                    </Typography>
+                                    <Link
+                                        href={paymentLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{ mt: 1, display: 'block' }}
+                                    >
+                                        {paymentLink}
+                                    </Link>
+                                </Box>
+                            </Grid>
+                        )}
 
                         <Grid size={{ xs: 12 }}>
                             <TextField

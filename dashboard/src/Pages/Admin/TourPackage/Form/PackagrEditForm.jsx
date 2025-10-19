@@ -32,6 +32,8 @@ import {
   uploadPackageBanner,
   uploadPackageDayImage,
 } from "../../../../features/package/packageSlice";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const PackageEditView = () => {
   const { id } = useParams();
@@ -62,6 +64,13 @@ const PackageEditView = () => {
       planType: "",
       description: "",
     },
+    policy: {
+      inclusionPolicy: [],
+      exclusionPolicy: [],
+      paymentPolicy: [],
+      cancellationPolicy: [],
+      termsAndConditions: []
+    }
   });
 
   useEffect(() => {
@@ -86,6 +95,18 @@ const PackageEditView = () => {
             hotelCosts.Superior = hotel.pricePerPerson;
         });
       }
+
+      // ✅ FIXED: Policy Data Conversion
+      const getPolicyContent = (policyArray) => {
+        if (!policyArray || !Array.isArray(policyArray) || policyArray.length === 0) return "";
+        // Agar array mein HTML content hai toh directly use karo
+        if (policyArray[0].includes('<p>') || policyArray[0].includes('<h')) {
+          return policyArray[0]; // Pehla element return karo kyunki HTML format mein hai
+        }
+        // Agar plain text array hai toh HTML mein convert karo
+        return policyArray.map(item => `<p>${item}</p>`).join('');
+      };
+
 
       setPkg({
         ...pkg,
@@ -115,6 +136,13 @@ const PackageEditView = () => {
         offerCostSuperior: hotelCosts.Superior || "",
         status: current.status || "deactive",
         mealPlan: current.mealPlan || { planType: "", description: "" },
+        policy: {
+          inclusionPolicy: getPolicyContent(current.policy?.inclusionPolicy),
+          exclusionPolicy: getPolicyContent(current.policy?.exclusionPolicy),
+          paymentPolicy: getPolicyContent(current.policy?.paymentPolicy),
+          cancellationPolicy: getPolicyContent(current.policy?.cancellationPolicy),
+          termsAndConditions: getPolicyContent(current.policy?.termsAndConditions)
+        }
       });
     }
   }, [current]);
@@ -136,37 +164,81 @@ const PackageEditView = () => {
   const handleSave = () => {
     if (!pkg) return;
 
-    // 🔹 Transform data before sending to API
-    const transformedData = {
-      ...pkg,
-      mealPlan: pkg.mealPlan,
-      destinationNights: [
-        {
-          destination: pkg.sector || "",
-          nights: pkg.stayLocations?.[0]?.nights || 0,
-          hotels: [
-            {
-              category: "standard",
-              hotelName: "TBD",
-              pricePerPerson: Number(pkg.offerCostStandard) || 0,
-            },
-            {
-              category: "deluxe",
-              hotelName: "TBD",
-              pricePerPerson: Number(pkg.offerCostDeluxe) || 0,
-            },
-            {
-              category: "superior",
-              hotelName: "TBD",
-              pricePerPerson: Number(pkg.offerCostSuperior) || 0,
-            },
-          ],
-        },
-      ],
+    // ✅ FIXED: Convert HTML back to array format for backend
+    const convertHtmlToArray = (htmlString) => {
+      if (!htmlString || htmlString.trim() === '') return [];
+      return [htmlString];
     };
 
+    // ✅ FIXED: Ensure stayLocations has proper structure with required fields
+    const validatedStayLocations = (pkg.stayLocations || []).map((location, index) => ({
+      city: location?.city || `City ${index + 1}`,
+      nights: location?.nights || 1
+    }));
+
+    // ✅ FIXED: Only send fields that actually exist in the package
+    const transformedData = {
+      // Remove tourType if it doesn't exist in current package
+      destinationCountry: pkg.destinationCountry || "India",
+      sector: pkg.sector || "",
+      packageSubType: Array.isArray(pkg.packageSubType) ? pkg.packageSubType : [pkg.packageSubType || ""],
+
+      // ✅ FIXED: Proper stayLocations structure
+      stayLocations: validatedStayLocations.length > 0 ? validatedStayLocations : [
+        { city: "Default City", nights: 1 }
+      ],
+
+      mealPlan: pkg.mealPlan || { planType: "CP", description: "" },
+
+      // ✅ FIXED: Proper destinationNights structure
+      destinationNights: validatedStayLocations.map(location => ({
+        destination: location.city,
+        nights: location.nights,
+        hotels: [
+          {
+            category: "standard",
+            hotelName: "TBD",
+            pricePerPerson: Number(pkg.offerCostStandard) || 0,
+          },
+          {
+            category: "deluxe",
+            hotelName: "TBD",
+            pricePerPerson: Number(pkg.offerCostDeluxe) || 0,
+          },
+          {
+            category: "superior",
+            hotelName: "TBD",
+            pricePerPerson: Number(pkg.offerCostSuperior) || 0,
+          },
+        ],
+      })),
+
+      // ✅ POLICY DATA
+      policy: {
+        inclusionPolicy: convertHtmlToArray(pkg.policy?.inclusionPolicy || ""),
+        exclusionPolicy: convertHtmlToArray(pkg.policy?.exclusionPolicy || ""),
+        paymentPolicy: convertHtmlToArray(pkg.policy?.paymentPolicy || ""),
+        cancellationPolicy: convertHtmlToArray(pkg.policy?.cancellationPolicy || ""),
+        termsAndConditions: convertHtmlToArray(pkg.policy?.termsAndConditions || "")
+      },
+
+      arrivalCity: pkg.arrivalCity || "",
+      departureCity: pkg.departureCity || "",
+      title: pkg.title || "",
+      notes: pkg.notes || "",
+      bannerImage: pkg.bannerImage || "",
+      validFrom: pkg.validFrom || null,
+      validTill: pkg.validTill || null,
+      status: pkg.status || "deactive"
+    };
+
+    console.log("Sending data to backend:", {
+      stayLocations: transformedData.stayLocations,
+      policy: transformedData.policy
+    });
+
     // 🔹 Dispatch update
-    dispatch(updatePackageStep1({ id, data: transformedData }))
+    dispatch(updatePackageStep1({ id: pkg._id, data: transformedData }))
       .unwrap()
       .then(() => {
         alert("✅ Package updated successfully");
@@ -174,10 +246,10 @@ const PackageEditView = () => {
       })
       .catch((err) => {
         console.error("❌ Error updating package:", err);
+        console.error("Error details:", err.response?.data);
+        alert("❌ Failed to update package: " + (err.message || "Check console for details"));
       });
   };
-
-
   return (
     <Box sx={{ p: 3, backgroundColor: "#eef3f8", minHeight: "100vh" }}>
       {/* Header */}
@@ -790,6 +862,145 @@ const PackageEditView = () => {
               ))}
             </Grid>
 
+            {/* Policy Section - Add this after Costs Section */}
+            <Typography
+              variant="h5"
+              fontWeight="bold"
+              color="primary"
+              sx={{ mt: 4, mb: 3, textAlign: 'center' }}
+            >
+              📋 Package Policies
+            </Typography>
+
+            <Grid container spacing={3}>
+              {[
+                {
+                  key: 'inclusionPolicy',
+                  label: '✅ Inclusion Policy',
+                  helper: 'What is included in the package'
+                },
+                {
+                  key: 'exclusionPolicy',
+                  label: '❌ Exclusion Policy',
+                  helper: 'What is not included in the package'
+                },
+                {
+                  key: 'paymentPolicy',
+                  label: '💰 Payment Policy',
+                  helper: 'Payment terms and conditions'
+                },
+                {
+                  key: 'cancellationPolicy',
+                  label: '⏰ Cancellation Policy',
+                  helper: 'Cancellation rules and refund policy'
+                },
+                {
+                  key: 'termsAndConditions',
+                  label: '📄 Terms & Conditions',
+                  helper: 'General terms and conditions'
+                }
+              ].map((policy) => (
+                <Grid size={{ xs: 12 }} key={policy.key}>
+                  <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                    <Typography variant="h6" gutterBottom color="primary">
+                      {policy.label}
+                    </Typography>
+
+                    <Box sx={{
+                      border: '1px solid #ccc',
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      '& .ql-toolbar': {
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        borderRight: 'none',
+                        borderBottom: '1px solid #ccc',
+                        backgroundColor: '#f8f9fa'
+                      },
+                      '& .ql-container': {
+                        border: 'none',
+                        minHeight: '200px',
+                        fontSize: '14px',
+                        fontFamily: 'Arial, sans-serif'
+                      },
+                      '& .ql-editor': {
+                        minHeight: '200px',
+                        fontSize: '14px'
+                      }
+                    }}>
+                      <ReactQuill
+                        value={pkg.policy?.[policy.key] || ""}
+                        onChange={(content) => setPkg(prev => ({
+                          ...prev,
+                          policy: {
+                            ...prev.policy,
+                            [policy.key]: content
+                          }
+                        }))}
+                        modules={{
+                          toolbar: {
+                            container: [
+                              // Font family and size
+                              [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+
+                              // Text formatting
+                              ['bold', 'italic', 'underline', 'strike'],
+
+                              // Text color and background
+                              [{ 'color': [] }, { 'background': [] }],
+
+                              // Lists
+                              [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+
+                              // Indentation
+                              [{ 'indent': '-1' }, { 'indent': '+1' }],
+
+                              // Alignment
+                              [{ 'align': [] }],
+
+                              // Headers
+                              [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+                              // Script
+                              [{ 'script': 'sub' }, { 'script': 'super' }],
+
+                              // Blockquote and code
+                              ['blockquote', 'code-block'],
+
+                              // Links and media
+                              ['link', 'image', 'video'],
+
+                              // Clean formatting
+                              ['clean']
+                            ]
+                          }
+                        }}
+                        formats={[
+                          'font', 'size',
+                          'bold', 'italic', 'underline', 'strike',
+                          'color', 'background',
+                          'list', 'bullet', 'indent',
+                          'align', 'header',
+                          'script', 'blockquote', 'code-block',
+                          'link', 'image', 'video'
+                        ]}
+                      />
+                    </Box>
+
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      💡 {policy.helper} - Use the toolbar above for rich text formatting
+                    </Typography>
+
+                    {/* Debug Info */}
+                    {pkg.policy?.[policy.key] && (
+                      <Typography variant="caption" color="info.main" sx={{ mt: 1, display: 'block' }}>
+                        🔍 Content loaded: {pkg.policy[policy.key].length} characters
+                      </Typography>
+                    )}
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
             {/* Save */}
             <Box textAlign="center" sx={{ mt: 4 }}>
               <Button

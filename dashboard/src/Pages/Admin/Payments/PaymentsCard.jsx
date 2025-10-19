@@ -37,6 +37,7 @@ const PaymentsCard = () => {
                         <Box flex={1.5}>Name</Box>
                         <Box flex={2}>Particulars</Box>
                         <Box flex={1}>Dr/Cr</Box>
+                        <Box flex={1}>Transition Id:</Box>
                         <Box flex={1}>Amount</Box>
                     </Box>
 
@@ -56,6 +57,7 @@ const PaymentsCard = () => {
                             <Box flex={1.5}>{payment.partyName}</Box>
                             <Box flex={2}>{payment.particulars}</Box>
                             <Box flex={1}>{payment.type}</Box>
+                            <Box flex={1}>{payment.reference}</Box>
                             <Box flex={1}>₹{payment.amount}</Box>
                         </Box>
                     ))}

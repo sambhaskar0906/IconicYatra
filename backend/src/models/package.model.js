@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { DaySchema } from "./day.model.js";
+import { policySchema } from "../common/policy.js";
 
 // Stay Locations
 const StayLocationSchema = new mongoose.Schema(
@@ -7,16 +8,12 @@ const StayLocationSchema = new mongoose.Schema(
         city: {
             type: String,
             trim: true,
-            required: function () {
-                return this.parent().status !== "draft";
-            },
+            required: true, // Always required
         },
         nights: {
             type: Number,
             min: 1,
-            required: function () {
-                return this.parent().status !== "draft";
-            },
+            required: true, // Always required
         },
     },
     { _id: false }
@@ -91,6 +88,12 @@ const PackageSchema = new mongoose.Schema(
         // 👇 new fields
         mealPlan: MealPlanSchema,
         destinationNights: [DestinationNightSchema],
+
+        // ✅ Added Policy Section (Dynamic / Optional)
+        policy: {
+            type: policySchema,
+            default: {}, // Empty by default, can include any or all policies dynamically
+        },
 
         arrivalCity: { type: String, default: "" },
         departureCity: { type: String, default: "" },

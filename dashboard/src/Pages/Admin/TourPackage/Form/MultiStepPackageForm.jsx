@@ -28,7 +28,7 @@ const MultiStepPackageForm = () => {
                 return;
             }
 
-            setStep1Data(result.package || payload); // store Step 1 data
+            setStep1Data(result.package || result || payload); // store Step 1 data
             setCreatedPackageId(result.package?._id || result._id); // store package ID
             setActiveStep(1); // move to step 2
         } catch (err) {

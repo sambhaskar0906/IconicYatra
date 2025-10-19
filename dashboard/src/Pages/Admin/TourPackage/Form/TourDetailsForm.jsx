@@ -19,11 +19,14 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    Card,
+    CardContent
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DeleteIcon from "@mui/icons-material/Delete";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useDispatch, useSelector } from "react-redux";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import { updatePackageTourDetails, fetchPackages } from "../../../../features/package/packageSlice";
 import {
     fetchCitiesByState,
@@ -36,6 +39,8 @@ import {
 import { getLeadOptions, addLeadOption, deleteLeadOption } from "../../../../features/leads/leadSlice";
 import { useNavigate } from "react-router-dom";
 import axios from "../../../../utils/axios";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
     const dispatch = useDispatch();
@@ -50,11 +55,19 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
     const [departureSearch, setDepartureSearch] = useState("");
     const [filteredArrivalCities, setFilteredArrivalCities] = useState([]);
     const [filteredDepartureCities, setFilteredDepartureCities] = useState([]);
+    const [policyInputs, setPolicyInputs] = useState({
+        inclusionPolicy: initialData?.policy?.inclusionPolicy?.join('\n') || "",
+        exclusionPolicy: initialData?.policy?.exclusionPolicy?.join('\n') || "",
+        paymentPolicy: initialData?.policy?.paymentPolicy?.join('\n') || "",
+        cancellationPolicy: initialData?.policy?.cancellationPolicy?.join('\n') || "",
+        termsAndConditions: initialData?.policy?.termsAndConditions?.join('\n') || ""
+    });
 
     // Add New Dialog states
     const [openDialog, setOpenDialog] = useState(false);
     const [currentField, setCurrentField] = useState("");
     const [addMore, setAddMore] = useState("");
+    const [currentHotelCategory, setCurrentHotelCategory] = useState("");
 
     // PackageEntryForm se aaye data ko extract karo
     const tourType = packageData?.tourType || "Domestic";
@@ -125,6 +138,13 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                 },
             ]
         })),
+        policy: initialData?.policy || {
+            inclusionPolicy: [],
+            exclusionPolicy: [],
+            paymentPolicy: [],
+            cancellationPolicy: [],
+            termsAndConditions: []
+        }
     });
 
     // ===== Add New Option Logic =====
@@ -139,14 +159,30 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         ];
     };
 
-    const handleOpenDialog = (field) => {
+    // Hotel categories के लिए options fetch करने का function
+    const getHotelOptionsForCategory = (category) => {
+        const fieldName = `hotel_${category}`;
+        const filteredOptions = options
+            ?.filter((opt) => opt.fieldName === fieldName)
+            .map((opt) => ({ value: opt.value, label: opt.value }));
+
+        return [
+            ...(filteredOptions || []),
+            { value: "__add_new", label: "+ Add New" },
+        ];
+    };
+
+    const handleOpenDialog = (field, category = "") => {
         setCurrentField(field);
+        setCurrentHotelCategory(category);
         setAddMore("");
         setOpenDialog(true);
     };
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
+        setCurrentHotelCategory("");
+        sessionStorage.removeItem('currentDestIndex');
     };
 
     const handleAddNewItem = async () => {
@@ -154,18 +190,41 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
 
         try {
             const newValue = addMore.trim();
-            const backendField = currentField;
+            let backendField = currentField;
+
+            // Special handling for hotel categories
+            if (currentHotelCategory) {
+                backendField = `hotel_${currentHotelCategory}`;
+            }
 
             await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
 
             // Fetch updated lead options from backend
             await dispatch(getLeadOptions()).unwrap();
 
-            // Automatically select the newly added city
+            // Automatically select the newly added item
             if (currentField === "arrivalCity") {
                 setTourDetails({ ...tourDetails, arrivalCity: newValue });
             } else if (currentField === "departureCity") {
                 setTourDetails({ ...tourDetails, departureCity: newValue });
+            } else if (currentHotelCategory && tourDetails.destinationNights.length > 0) {
+                // For hotel categories, automatically update the form state
+                const updatedNights = [...tourDetails.destinationNights];
+
+                // Update all destination nights with the new hotel option
+                updatedNights.forEach((dest, destIndex) => {
+                    const catIndex = ["standard", "deluxe", "superior"].indexOf(currentHotelCategory);
+                    if (catIndex !== -1) {
+                        if (!dest.hotels) dest.hotels = [];
+                        dest.hotels[catIndex] = {
+                            ...dest.hotels[catIndex],
+                            category: currentHotelCategory,
+                            hotelName: newValue,
+                        };
+                    }
+                });
+
+                setTourDetails({ ...tourDetails, destinationNights: updatedNights });
             }
 
             handleCloseDialog();
@@ -424,6 +483,13 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                     ]
                 })),
                 perPerson: tourDetails.perPerson || 1,
+                policy: {
+                    inclusionPolicy: policyInputs.inclusionPolicy.split('\n').filter(item => item.trim()),
+                    exclusionPolicy: policyInputs.exclusionPolicy.split('\n').filter(item => item.trim()),
+                    paymentPolicy: policyInputs.paymentPolicy.split('\n').filter(item => item.trim()),
+                    cancellationPolicy: policyInputs.cancellationPolicy.split('\n').filter(item => item.trim()),
+                    termsAndConditions: policyInputs.termsAndConditions.split('\n').filter(item => item.trim()),
+                }
             };
 
             await dispatch(updatePackageTourDetails({ id: packageId, data: payload })).unwrap();
@@ -468,7 +534,20 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         }
     };
 
+    // Hotel change handler with Add New support
     const handleHotelChange = (destIndex, category, hotelName) => {
+        if (hotelName === "__add_new") {
+            // Store the current destination index for later use
+            setCurrentHotelCategory(category);
+            setCurrentField(`hotel_${category}`);
+            // Store the destination index in a ref or state for later use
+            setAddMore("");
+            setOpenDialog(true);
+            // Store the destination index temporarily
+            sessionStorage.setItem('currentDestIndex', destIndex);
+            return;
+        }
+
         const updatedNights = [...tourDetails.destinationNights];
         const catIndex = ["standard", "deluxe", "superior"].indexOf(category);
 
@@ -513,6 +592,56 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
             );
         }
 
+        const optData = options?.find(
+            (o) => o.fieldName === fieldName && o.value === option
+        );
+
+        return (
+            <li
+                {...props}
+                key={option}
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: '8px 12px',
+                }}
+            >
+                <span>{option}</span>
+                {optData && (
+                    <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete "${option}"?`)) {
+                                dispatch(deleteLeadOption(optData._id));
+                            }
+                        }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                )}
+            </li>
+        );
+    };
+
+    // Custom render option for Hotel Autocomplete
+    const renderHotelOption = (props, option, category) => {
+        if (option === "__add_new") {
+            return (
+                <li {...props} key="add_new" style={{
+                    color: "#1976d2",
+                    fontWeight: 600,
+                    backgroundColor: '#f0f7ff',
+                    borderBottom: '2px solid #1976d2'
+                }}>
+                    + Add New {category.charAt(0).toUpperCase() + category.slice(1)} Hotel
+                </li>
+            );
+        }
+
+        const fieldName = `hotel_${category}`;
         const optData = options?.find(
             (o) => o.fieldName === fieldName && o.value === option
         );
@@ -671,7 +800,6 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                 </Grid>
             </Grid>
 
-            {/* Rest of your existing UI code remains exactly the same */}
             {/* Validity Section */}
             <Typography variant="h6" color="primary" sx={{ mt: 3, mb: 1 }}>
                 Package Validity
@@ -841,7 +969,7 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                 + Add Day
             </Button>
 
-            {/* Rest of the code remains the same... */}
+            {/* Hotels Section with Add New Functionality */}
             <Grid container sx={{ mt: 5 }} spacing={5}>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -874,8 +1002,8 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                     </TextField>
                 </Grid>
 
-                {/* Hotels Table */}
-                <Table>
+                {/* Hotels Table with Add New functionality */}
+                <Table sx={{ mt: 2 }}>
                     <TableHead>
                         <TableRow>
                             <TableCell>Destination</TableCell>
@@ -898,22 +1026,68 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                                     />
                                 </TableCell>
 
-                                {["standard", "deluxe", "superior"].map((cat, i) => (
-                                    <TableCell key={cat}>
-                                        <TextField
-                                            select
-                                            value={dest.hotels[i]?.hotelName || ""}
-                                            onChange={(e) => handleHotelChange(index, cat, e.target.value)}
-                                            fullWidth
-                                        >
-                                            {hotelOptions[dest.destination]?.map((h) => (
-                                                <MenuItem key={h._id} value={h.name}>
-                                                    {h.name}
-                                                </MenuItem>
-                                            ))}
-                                        </TextField>
-                                    </TableCell>
-                                ))}
+                                {/* Standard Hotel with Add New */}
+                                <TableCell>
+                                    <Autocomplete
+                                        options={getHotelOptionsForCategory("standard").map(opt => opt.value)}
+                                        value={dest.hotels[0]?.hotelName || ""}
+                                        onChange={(e, newValue) =>
+                                            handleHotelChange(index, "standard", newValue)
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                size="small"
+                                                placeholder="Select hotel"
+                                            />
+                                        )}
+                                        renderOption={(props, option) =>
+                                            renderHotelOption(props, option, "standard")
+                                        }
+                                    />
+                                </TableCell>
+
+                                {/* Deluxe Hotel with Add New */}
+                                <TableCell>
+                                    <Autocomplete
+                                        options={getHotelOptionsForCategory("deluxe").map(opt => opt.value)}
+                                        value={dest.hotels[1]?.hotelName || ""}
+                                        onChange={(e, newValue) =>
+                                            handleHotelChange(index, "deluxe", newValue)
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                size="small"
+                                                placeholder="Select hotel"
+                                            />
+                                        )}
+                                        renderOption={(props, option) =>
+                                            renderHotelOption(props, option, "deluxe")
+                                        }
+                                    />
+                                </TableCell>
+
+                                {/* Superior Hotel with Add New */}
+                                <TableCell>
+                                    <Autocomplete
+                                        options={getHotelOptionsForCategory("superior").map(opt => opt.value)}
+                                        value={dest.hotels[2]?.hotelName || ""}
+                                        onChange={(e, newValue) =>
+                                            handleHotelChange(index, "superior", newValue)
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                size="small"
+                                                placeholder="Select hotel"
+                                            />
+                                        )}
+                                        renderOption={(props, option) =>
+                                            renderHotelOption(props, option, "superior")
+                                        }
+                                    />
+                                </TableCell>
                             </TableRow>
                         ))}
 
@@ -939,6 +1113,130 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                 </Table>
             </Grid>
 
+            <Typography variant="h5" fontWeight="bold" color="primary" sx={{ mt: 4, mb: 3, textAlign: 'center' }}>
+                📋 Package Policies
+            </Typography>
+
+            <Grid container spacing={3}>
+                {[
+                    {
+                        key: 'inclusionPolicy',
+                        label: '✅ Inclusion Policy',
+                        helper: 'What is included in the package'
+                    },
+                    {
+                        key: 'exclusionPolicy',
+                        label: '❌ Exclusion Policy',
+                        helper: 'What is not included in the package'
+                    },
+                    {
+                        key: 'paymentPolicy',
+                        label: '💰 Payment Policy',
+                        helper: 'Payment terms and conditions'
+                    },
+                    {
+                        key: 'cancellationPolicy',
+                        label: '⏰ Cancellation Policy',
+                        helper: 'Cancellation rules and refund policy'
+                    },
+                    {
+                        key: 'termsAndConditions',
+                        label: '📄 Terms & Conditions',
+                        helper: 'General terms and conditions'
+                    }
+                ].map((policy) => (
+                    <Grid size={{ xs: 12 }} key={policy.key}>
+                        <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom color="primary">
+                                {policy.label}
+                            </Typography>
+
+                            <Box sx={{
+                                border: '1px solid #ccc',
+                                borderRadius: 1,
+                                overflow: 'hidden',
+                                '& .ql-toolbar': {
+                                    borderTop: 'none',
+                                    borderLeft: 'none',
+                                    borderRight: 'none',
+                                    borderBottom: '1px solid #ccc',
+                                    backgroundColor: '#f8f9fa'
+                                },
+                                '& .ql-container': {
+                                    border: 'none',
+                                    minHeight: '200px',
+                                    fontSize: '14px',
+                                    fontFamily: 'Arial, sans-serif'
+                                },
+                                '& .ql-editor': {
+                                    minHeight: '200px',
+                                    fontSize: '14px'
+                                }
+                            }}>
+                                <ReactQuill
+                                    value={policyInputs[policy.key]}
+                                    onChange={(content) => setPolicyInputs(prev => ({
+                                        ...prev,
+                                        [policy.key]: content
+                                    }))}
+                                    modules={{
+                                        toolbar: {
+                                            container: [
+                                                // Font family and size
+                                                [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+
+                                                // Text formatting
+                                                ['bold', 'italic', 'underline', 'strike'],
+
+                                                // Text color and background
+                                                [{ 'color': [] }, { 'background': [] }],
+
+                                                // Lists
+                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+
+                                                // Indentation
+                                                [{ 'indent': '-1' }, { 'indent': '+1' }],
+
+                                                // Alignment
+                                                [{ 'align': [] }],
+
+                                                // Headers
+                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+                                                // Script
+                                                [{ 'script': 'sub' }, { 'script': 'super' }],
+
+                                                // Blockquote and code
+                                                ['blockquote', 'code-block'],
+
+                                                // Links and media
+                                                ['link', 'image', 'video'],
+
+                                                // Clean formatting
+                                                ['clean']
+                                            ]
+                                        }
+                                    }}
+                                    formats={[
+                                        'font', 'size',
+                                        'bold', 'italic', 'underline', 'strike',
+                                        'color', 'background',
+                                        'list', 'bullet', 'indent',
+                                        'align', 'header',
+                                        'script', 'blockquote', 'code-block',
+                                        'link', 'image', 'video'
+                                    ]}
+                                />
+                            </Box>
+
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                💡 {policy.helper} - Use the toolbar above for rich text formatting
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                ))}
+            </Grid>
+
             <Box textAlign="center" mt={3}>
                 <Button variant="contained" color="primary" onClick={handleSubmit}>
                     Save Tour Details
@@ -947,13 +1245,22 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
 
             {/* Add New Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>Add New City</DialogTitle>
+                <DialogTitle>
+                    {currentHotelCategory
+                        ? `Add New ${currentHotelCategory.charAt(0).toUpperCase() + currentHotelCategory.slice(1)} Hotel`
+                        : `Add New ${currentField}`
+                    }
+                </DialogTitle>
                 <DialogContent>
                     <TextField
                         fullWidth
                         autoFocus
                         margin="dense"
-                        label="New City Name"
+                        label={
+                            currentHotelCategory
+                                ? `New ${currentHotelCategory} Hotel Name`
+                                : `New ${currentField}`
+                        }
                         value={addMore}
                         onChange={(e) => setAddMore(e.target.value)}
                         onKeyPress={(e) => {
@@ -961,13 +1268,17 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                                 handleAddNewItem();
                             }
                         }}
-                        helperText="Enter the name of the city you want to add"
+                        helperText={
+                            currentHotelCategory
+                                ? `Enter the name of the ${currentHotelCategory} hotel you want to add`
+                                : `Enter the name you want to add`
+                        }
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button onClick={handleAddNewItem} variant="contained" disabled={!addMore.trim()}>
-                        Add City
+                        Add {currentHotelCategory ? 'Hotel' : 'Item'}
                     </Button>
                 </DialogActions>
             </Dialog>
