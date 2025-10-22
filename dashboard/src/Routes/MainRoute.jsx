@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import {
     Alert,
     AlertTitle,
@@ -29,7 +29,6 @@ import InvoiceView from "../Components/InvoiceView";
 import EditProfile from "../Pages/Admin/User/EditProfile";
 import QuotationCard from "../Pages/Admin/Quotation/QuotationCard";
 import VehicleQuotation from "../Pages/Admin/Quotation/VehicleQuotation/VehicleQuotation";
-import HotelQuotation from "../Pages/Admin/Quotation/HotelQuotation/hotelquotation";
 import FlightQuotation from "../Pages/Admin/Quotation/FlightQuotation/flightquotation";
 import QuickQuotation from "../Pages/Admin/Quotation/QuickQuotation/quickquotation";
 import FullQuotation from "../Pages/Admin/Quotation/FullQuotation/fullquotation";
@@ -40,160 +39,261 @@ import HotelFinalize from "../Pages/Admin/Quotation/HotelQuotation/HotelFinalize
 import Profile from "../Pages/Admin/Profile/Profile";
 import StaffEditForm from "../Pages/Admin/Staff/Form/EditStaff";
 
+// Import the main hotel quotation component
+import HotelQuotationMain from "../Pages/Admin/Quotation/HotelQuotation/hotelQuotationMain";
+
 const MainRoute = () => {
     const location = useLocation();
+    const navigate = useNavigate();
 
     const [isAuthChecked, setIsAuthChecked] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [countdown, setCountdown] = useState(0);
     const [showExpiryAlert, setShowExpiryAlert] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const user = localStorage.getItem("user");
+        const checkAuthentication = () => {
+            const token = localStorage.getItem("token");
+            const user = localStorage.getItem("user");
 
-        if (!token || !user) {
-            // No valid session
-            setIsAuthenticated(false);
-            setIsAuthChecked(true);
-            return;
-        }
+            if (!token || !user) {
+                setIsAuthenticated(false);
+                setIsAuthChecked(true);
+                setLoading(false);
+                return;
+            }
 
-        // ✅ User is logged in
-        setIsAuthenticated(true);
-        setIsAuthChecked(true);
+            try {
+                // Validate token format (basic check)
+                const tokenParts = token.split('.');
+                if (tokenParts.length !== 3) {
+                    throw new Error('Invalid token format');
+                }
 
-        const sessionStart = Number(localStorage.getItem("sessionStart"));
-        const now = Date.now();
+                setIsAuthenticated(true);
+                setIsAuthChecked(true);
 
-        // If no session start exists or it's an old one, reset
-        if (!sessionStart || now - sessionStart > 10 * 60 * 60 * 1000) {
-            // New login or expired old session
-            localStorage.setItem("sessionStart", now);
-        }
+                // Initialize session start if not exists
+                const sessionStart = Number(localStorage.getItem("sessionStart"));
+                const now = Date.now();
 
-        const expiryTime = 10 * 60 * 60; // 10 hours in seconds
-        const alertBefore = 60; // 1 minute before expiry
+                if (!sessionStart || now - sessionStart > 10 * 60 * 60 * 1000) {
+                    localStorage.setItem("sessionStart", now.toString());
+                }
+
+                setLoading(false);
+            } catch (error) {
+                console.error('Authentication error:', error);
+                localStorage.clear();
+                setIsAuthenticated(false);
+                setIsAuthChecked(true);
+                setLoading(false);
+            }
+        };
+
+        checkAuthentication();
+    }, [location]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const expiryTime = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+        const alertBefore = 5 * 60 * 1000; // 5 minutes before expiry
 
         const timer = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - Number(localStorage.getItem("sessionStart"))) / 1000);
+            const sessionStart = Number(localStorage.getItem("sessionStart"));
+            const now = Date.now();
+            const elapsed = now - sessionStart;
             const remaining = expiryTime - elapsed;
 
             if (remaining <= 0) {
                 clearInterval(timer);
-                localStorage.clear();
-                setIsAuthenticated(false);
-                setShowExpiryAlert(false);
-                window.location.href = "https://iconicyatra.com/admin/login";
+                handleLogout();
                 return;
             }
 
-            setCountdown(remaining);
+            setCountdown(Math.ceil(remaining / 1000));
             setShowExpiryAlert(remaining <= alertBefore);
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [location]);
+    }, [isAuthenticated]);
 
-    if (!isAuthChecked) return null;
+    const handleLogout = () => {
+        localStorage.clear();
+        setIsAuthenticated(false);
+        setShowExpiryAlert(false);
+        window.location.href = "https://iconicyatra.com/admin/login";
+    };
+
+    const handleExtendSession = () => {
+        // Reset session timer
+        localStorage.setItem("sessionStart", Date.now().toString());
+        setShowExpiryAlert(false);
+    };
+
+    if (loading) {
+        return (
+            <Container
+                sx={{
+                    display: "flex",
+                    height: "100vh",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <LinearProgress sx={{ width: '100%', maxWidth: 400 }} />
+            </Container>
+        );
+    }
+
+    if (!isAuthenticated) {
+        const hasPreviousSession = localStorage.getItem("sessionStart");
+
+        // If no valid session, redirect to login
+        if (!hasPreviousSession) {
+            window.location.href = "https://iconicyatra.com/admin/login";
+            return null;
+        }
+
+        return (
+            <Container
+                sx={{
+                    display: "flex",
+                    height: "100vh",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <Alert
+                    severity="error"
+                    sx={{
+                        width: "100%",
+                        maxWidth: 600,
+                        textAlign: "center",
+                        p: 3,
+                        fontSize: "1.1rem",
+                    }}
+                >
+                    <AlertTitle sx={{ fontSize: "1.3rem", fontWeight: "bold" }}>
+                        ⚠️ Session Expired
+                    </AlertTitle>
+                    Your session has expired. Redirecting to login page...
+                </Alert>
+            </Container>
+        );
+    }
 
     const user = localStorage.getItem("user");
     const userData = user ? JSON.parse(user) : null;
 
-    // 🚫 If not authenticated, only show alert when session actually expired (not new users)
-    if (!isAuthenticated) {
-        const hasPreviousSession = localStorage.getItem("sessionStart");
-        if (hasPreviousSession) {
-            return (
-                <Container
-                    sx={{
-                        display: "flex",
-                        height: "100vh",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    <Alert
-                        severity="error"
-                        sx={{
-                            width: "100%",
-                            maxWidth: 600,
-                            textAlign: "center",
-                            p: 3,
-                            fontSize: "1.1rem",
-                        }}
-                    >
-                        <AlertTitle sx={{ fontSize: "1.3rem", fontWeight: "bold" }}>
-                            ⚠️ Session Expired
-                        </AlertTitle>
-                        Your session has expired. Redirecting to login page...
-                    </Alert>
-                </Container>
-            );
-        } else {
-            // New user, directly redirect to login page without showing alert
-            window.location.href = "https://iconicyatra.com/admin/login";
-            return null;
-        }
-    }
-
     return (
-        <DashboardLayout>
+        <DashboardLayout user={userData}>
             {showExpiryAlert && (
-                <Container sx={{ position: "fixed", top: 20, width: "100%", zIndex: 999 }}>
-                    <Alert severity="warning" sx={{ maxWidth: 600, margin: "auto", borderRadius: 2 }}>
-                        <AlertTitle sx={{ fontWeight: "bold" }}>⚠️ Token Expiry Alert</AlertTitle>
-                        Your session will expire in <b>{countdown} seconds</b>. Please save your work.
+                <Container sx={{ position: "fixed", top: 20, width: "100%", zIndex: 9999 }}>
+                    <Alert
+                        severity="warning"
+                        sx={{
+                            maxWidth: 600,
+                            margin: "auto",
+                            borderRadius: 2,
+                            boxShadow: 3
+                        }}
+                        action={
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={handleExtendSession}
+                            >
+                                EXTEND
+                            </Button>
+                        }
+                    >
+                        <AlertTitle sx={{ fontWeight: "bold" }}>⚠️ Session Expiry Alert</AlertTitle>
+                        Your session will expire in <b>{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</b>. Please save your work.
                         <Box sx={{ mt: 1 }}>
-                            <LinearProgress variant="determinate" value={(countdown / 60) * 100} />
+                            <LinearProgress
+                                variant="determinate"
+                                value={((36000 - countdown) / 36000) * 100}
+                                color="warning"
+                            />
                         </Box>
                     </Alert>
                 </Container>
             )}
 
-            <Routes>
-                <Route path="/" element={<Dashboard user={userData} />} />
-                <Route path="/lead" element={<LeadCard />} />
-                <Route path="/lead/leadtourform" element={<LeadCreationFlow />} />
-                <Route path="/lead/leadeditform" element={<LeadEditForm />} />
+            <Box sx={{
+                pt: showExpiryAlert ? 8 : 0,
+                minHeight: '100vh',
+                backgroundColor: '#f5f5f5'
+            }}>
+                <Routes>
+                    {/* Dashboard */}
+                    <Route path="/" element={<Dashboard user={userData} />} />
 
-                <Route path="/hotel" element={<HotelCard />} />
-                <Route path="/hotelform" element={<HotelForm />} />
-                <Route path="/hotel/edit/:id" element={<HotelEditForm isEdit={true} />} />
+                    {/* Lead Routes */}
+                    <Route path="/lead" element={<LeadCard />} />
+                    <Route path="/lead/leadtourform" element={<LeadCreationFlow />} />
+                    <Route path="/lead/leadeditform/:id" element={<LeadEditForm />} />
 
-                <Route path="/tourpackage" element={<PackageCard />} />
-                <Route path="/packageform" element={<MultiStepPackageForm />} />
-                <Route path="/tourpackage/packageeditform/:id" element={<PackageEditForm />} />
+                    {/* Hotel Routes */}
+                    <Route path="/hotel" element={<HotelCard />} />
+                    <Route path="/hotelform" element={<HotelForm />} />
+                    <Route path="/hotel/edit/:id" element={<HotelEditForm isEdit={true} />} />
 
-                <Route path='/associates' element={<AssociatesCard />} />
-                <Route path='/associatesform' element={<AssociatesForm />} />
-                <Route path='/associates/associateseditform/:associateId' element={<AssociatesEditFrom />} />
+                    {/* Tour Package Routes */}
+                    <Route path="/tourpackage" element={<PackageCard />} />
+                    <Route path="/packageform" element={<MultiStepPackageForm />} />
+                    <Route path="/tourpackage/packageeditform/:id" element={<PackageEditForm />} />
 
-                {/* Staff Routes */}
-                <Route path="/staff" element={<StaffCard />} />
-                <Route path="/staffform" element={<StaffForm />} />
-                <Route path="/staff/staffeditform/:staffId" element={<StaffEditForm />} />
+                    {/* Associates Routes */}
+                    <Route path='/associates' element={<AssociatesCard />} />
+                    <Route path='/associatesform' element={<AssociatesForm />} />
+                    <Route path='/associates/associateseditform/:associateId' element={<AssociatesEditFrom />} />
 
+                    {/* Staff Routes */}
+                    <Route path="/staff" element={<StaffCard />} />
+                    <Route path="/staffform" element={<StaffForm />} />
+                    <Route path="/staff/staffeditform/:staffId" element={<StaffEditForm />} />
 
-                <Route path="/payments" element={<PaymentsCard />} />
-                <Route path="/payments-form" element={<PaymentsForm />} />
+                    {/* Payments Routes */}
+                    <Route path="/payments" element={<PaymentsCard />} />
+                    <Route path="/payments-form" element={<PaymentsForm />} />
 
-                <Route path="/invoice-view" element={<InvoiceView />} />
-                <Route path="/profile/edit" element={<EditProfile />} />
+                    {/* Invoice & Profile */}
+                    <Route path="/invoice-view/:id?" element={<InvoiceView />} />
+                    <Route path="/profile/edit" element={<EditProfile />} />
+                    <Route path="/profile" element={<Profile />} />
 
-                <Route path="/quotation" element={<QuotationCard />} />
-                <Route path="/vehiclequotation" element={<VehicleQuotation />} />
-                <Route path="/hotelquotation" element={<HotelQuotation />} />
-                <Route path="/flightquotation" element={<FlightQuotation />} />
-                <Route path="/quickquotation" element={<QuickQuotation />} />
-                <Route path="/fullquotation" element={<FullQuotation />} />
-                <Route path="/customquotation" element={<CustomQuotation />} />
-                <Route path="/flightfinalize/:id" element={<FlightFinalize />} />
-                <Route path="/vehiclefinalize/:id" element={<VehicleFinalize />} />
-                <Route path="/hotelfinalize" element={<HotelFinalize />} />
+                    {/* Quotation Routes */}
+                    <Route path="/quotation" element={<QuotationCard />} />
+                    <Route path="/vehiclequotation" element={<VehicleQuotation />} />
 
-                <Route path="/profile" element={<Profile />} />
-            </Routes>
+                    {/* Updated Hotel Quotation Route */}
+                    <Route path="/hotelquotation" element={<HotelQuotationMain />} />
+
+                    <Route path="/flightquotation" element={<FlightQuotation />} />
+                    <Route path="/quickquotation" element={<QuickQuotation />} />
+                    <Route path="/fullquotation" element={<FullQuotation />} />
+                    <Route path="/customquotation" element={<CustomQuotation />} />
+
+                    {/* Finalize Routes */}
+                    <Route path="/flightfinalize/:id" element={<FlightFinalize />} />
+                    <Route path="/vehiclefinalize/:id" element={<VehicleFinalize />} />
+                    <Route path="/hotelfinalize/:id" element={<HotelFinalize />} />
+
+                    {/* Fallback route for 404 */}
+                    <Route path="*" element={
+                        <Container sx={{ textAlign: 'center', mt: 10 }}>
+                            <Alert severity="error">
+                                <AlertTitle>Page Not Found</AlertTitle>
+                                The page you're looking for doesn't exist.
+                            </Alert>
+                        </Container>
+                    } />
+                </Routes>
+            </Box>
         </DashboardLayout>
     );
 };

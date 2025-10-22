@@ -28,51 +28,6 @@ import {
   addLeadOption,
 } from "../../../../features/leads/leadSlice";
 
-import HotelQuotationStep2 from "./HotelQuotationStep2";
-
-const data = {
-  clients: ["Client A", "Client B", "Client C"],
-  sectors: [
-    "Andhra Pradesh",
-    "Arunachal Pradesh",
-    "Assam",
-    "Bihar",
-    "Chhattisgarh",
-    "Delhi",
-    "Goa",
-    "Gujarat",
-    "Haryana",
-    "Himachal Pradesh",
-    "Manipur",
-  ],
-  countries: [
-    "United States",
-    "United Kingdom",
-    "Canada",
-    "Australia",
-    "France",
-    "Germany",
-    "Japan",
-    "Singapore",
-    "Thailand",
-    "UAE",
-  ],
-  cities: ["Delhi", "Mumbai", "Chennai"],
-  locations: ["Airport", "Railway Station", "Hotel"],
-  services: [
-    "Air Ticket",
-    "Bus Ticket",
-    "Covid Pass",
-    "Cruise",
-    "Hotel",
-    "Vehicle",
-    "Visa",
-  ],
-  hotelTypes: ["3 Star", "4 Star", "5 Star"],
-  mealPlans: ["Breakfast Only", "Half Board", "Full Board"],
-  sharingTypes: ["Single", "Double", "Triple"],
-};
-
 const validationSchema = Yup.object({
   clientName: Yup.string().required("Required"),
   sector: Yup.string().required("Required"),
@@ -101,67 +56,99 @@ const Section = ({ title, children }) => (
   </Paper>
 );
 
-const QuotationForm = () => {
-  const [servicesList, setServicesList] = useState(data.services);
+const HotelQuotationStep1 = ({ onNext, onBack, initialData }) => {
+  const [servicesList, setServicesList] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newService, setNewService] = useState("");
-  const [showStep2, setShowStep2] = useState(false);
   const dispatch = useDispatch();
+
   const formik = useFormik({
     initialValues: {
-      clientName: "",
-      tourType: "Domestic",
-      sector: "",
-      showCostPerAdult: false,
-      services: [],
-      adults: "",
-      children: "",
-      kids: "",
-      infants: "",
-      withoutMattress: false,
-      hotelType: "",
-      mealPlan: "",
-      transport: "",
-      sharingType: "",
-      noOfRooms: "",
-      noOfMattress: 0,
-      arrivalDate: null,
-      arrivalCity: "",
-      arrivalLocation: "",
-      departureDate: null,
-      departureCity: "",
-      departureLocation: "",
-      nights: "",
-      validFrom: null,
-      validTill: null,
-      createBy: "New Quotation",
-      quotationTitle: "",
-      initialNotes:
-        "This is only tentative schedule for sightseeing and travel. Actual sightseeing may get affected due to weather, road conditions, local authority notices, shortage of timing, or off days.",
-      banner: null,
+      clientName: initialData?.clientName || "",
+      tourType: initialData?.tourType || "Domestic",
+      sector: initialData?.sector || "",
+      showCostPerAdult: initialData?.showCostPerAdult || false,
+      services: initialData?.services || [],
+      adults: initialData?.adults || "",
+      children: initialData?.children || "",
+      kids: initialData?.kids || "",
+      infants: initialData?.infants || "",
+      withoutMattress: initialData?.withoutMattress || false,
+      hotelType: initialData?.hotelType || "",
+      mealPlan: initialData?.mealPlan || "",
+      transport: initialData?.transport || "",
+      sharingType: initialData?.sharingType || "",
+      noOfRooms: initialData?.noOfRooms || "",
+      noOfMattress: initialData?.noOfMattress || 0,
+      arrivalDate: initialData?.arrivalDate || null,
+      arrivalCity: initialData?.arrivalCity || "",
+      arrivalLocation: initialData?.arrivalLocation || "",
+      departureDate: initialData?.departureDate || null,
+      departureCity: initialData?.departureCity || "",
+      departureLocation: initialData?.departureLocation || "",
+      nights: initialData?.nights || "",
+      validFrom: initialData?.validFrom || null,
+      validTill: initialData?.validTill || null,
+      createBy: initialData?.createBy || "New Quotation",
+      quotationTitle: initialData?.quotationTitle || "",
+      initialNotes: initialData?.initialNotes || "This is only tentative schedule for sightseeing and travel. Actual sightseeing may get affected due to weather, road conditions, local authority notices, shortage of timing, or off days.",
+      banner: initialData?.banner || null,
     },
     validationSchema,
     onSubmit: (values) => {
-      console.log("Form Data:", values);
-      setShowStep2(true);
+      console.log("✅ Step 1 Form Data:", values);
+
+      // Properly structured data with all required fields for Step 4
+      const stepData = {
+        clientName: values.clientName,
+        tourType: values.tourType,
+        sector: values.sector,
+        services: values.services,
+        adults: values.adults,
+        children: values.children,
+        kids: values.kids,
+        infants: values.infants,
+        arrivalDate: values.arrivalDate,
+        arrivalLocation: values.arrivalLocation,
+        departureDate: values.departureDate,
+        departureLocation: values.departureLocation,
+        arrivalCity: values.arrivalCity,
+        departureCity: values.departureCity,
+        nights: values.nights,
+        quotationTitle: values.quotationTitle,
+        // Additional fields that might be needed
+        hotelType: values.hotelType,
+        mealPlan: values.mealPlan,
+        transport: values.transport,
+      };
+
+      console.log("🚀 Step 1 Data being passed to main:", stepData);
+      onNext(stepData);
     },
+    enableReinitialize: true,
   });
+
   const {
-    list: leadList = [],     // main array of leads
+    list: leadList = [],
     status,
     options = [],
     loading,
     error,
   } = useSelector((state) => state.leads);
+
   useEffect(() => {
     dispatch(getAllLeads());
   }, [dispatch]);
+
+  // Extract all unique values from leads for dropdown options
   const clientOptions = [
-    ...new Set(leadList?.map((lead) => lead.personalDetails.fullName) || []),
-  ];
+    ...new Set(leadList?.map((lead) => lead.personalDetails?.fullName) || []),
+  ].filter(Boolean);
+
   const tourTypeOptions = [
-    ...new Set(leadList?.map((lead) => lead.tourDetails.tourType) || []),
-  ];
+    ...new Set(leadList?.map((lead) => lead.tourDetails?.tourType) || []),
+  ].filter(Boolean);
+
   const selectedLead = leadList.find(
     (lead) => lead.personalDetails?.fullName === formik.values.clientName
   );
@@ -171,9 +158,41 @@ const QuotationForm = () => {
       selectedLead.tourDetails?.tourDestination ||
       selectedLead.location?.state ||
       ""
-    ].filter(Boolean) // remove empty values
+    ].filter(Boolean)
     : [];
+
+  // Dynamic data extraction from leads
   const dynamicData = {
+    // Extract all unique services from all leads
+    services: [
+      ...new Set(
+        leadList?.flatMap(
+          (lead) => lead.tourDetails?.servicesRequired || []
+        )
+      ),
+    ],
+    // Extract cities from location data in leads
+    cities: [
+      ...new Set(
+        leadList
+          ?.map((lead) => lead.location?.city)
+          .filter(Boolean)
+      ),
+    ],
+    // Extract locations from pickup/drop data
+    locations: [
+      ...new Set([
+        ...leadList
+          ?.map((lead) => lead.tourDetails?.pickupDrop?.arrivalLocation)
+          .filter(Boolean),
+        ...leadList
+          ?.map((lead) => lead.tourDetails?.pickupDrop?.departureLocation)
+          .filter(Boolean),
+        "Airport",
+        "Railway Station",
+        "Hotel"
+      ]),
+    ],
     hotelTypes: [
       ...new Set(
         leadList?.flatMap(
@@ -197,7 +216,12 @@ const QuotationForm = () => {
     ],
   };
 
-
+  // Initialize services list when leads are loaded
+  useEffect(() => {
+    if (dynamicData.services.length > 0) {
+      setServicesList(dynamicData.services);
+    }
+  }, [dynamicData.services]);
 
   useEffect(() => {
     if (selectedLead) {
@@ -298,23 +322,9 @@ const QuotationForm = () => {
           "departureLocation",
           lead.tourDetails?.pickupDrop?.departureLocation || ""
         );
-        formik.setFieldValue(
-          "hotelType",
-          lead.tourDetails?.accommodation?.hotelType?.[0] || ""
-        );
-        formik.setFieldValue(
-          "mealPlan",
-          lead.tourDetails?.accommodation?.mealPlan || ""
-        );
-        formik.setFieldValue(
-          "sharingType",
-          lead.tourDetails?.accommodation?.sharingType || ""
-        );
       }
     }
   }, [formik.values.clientName, formik.values.tourType, leadList]);
-
-
 
   const handleAddService = () => {
     if (newService && !servicesList.includes(newService)) {
@@ -336,14 +346,14 @@ const QuotationForm = () => {
       name: "arrivalCity",
       label: "Arrival City",
       options: Array.from(
-        new Set([...data.cities, formik.values.arrivalCity].filter(Boolean))
+        new Set([...dynamicData.cities, formik.values.arrivalCity].filter(Boolean))
       ),
     },
     {
       name: "arrivalLocation",
       label: "Arrival Location",
       options: Array.from(
-        new Set([...data.locations, formik.values.arrivalLocation].filter(Boolean))
+        new Set([...dynamicData.locations, formik.values.arrivalLocation].filter(Boolean))
       ),
     },
     {
@@ -355,22 +365,17 @@ const QuotationForm = () => {
       name: "departureCity",
       label: "Departure City",
       options: Array.from(
-        new Set([...data.cities, formik.values.departureCity].filter(Boolean))
+        new Set([...dynamicData.cities, formik.values.departureCity].filter(Boolean))
       ),
     },
     {
       name: "departureLocation",
       label: "Departure Location",
       options: Array.from(
-        new Set([...data.locations, formik.values.departureLocation].filter(Boolean))
+        new Set([...dynamicData.locations, formik.values.departureLocation].filter(Boolean))
       ),
     },
   ];
-
-
-  if (showStep2) {
-    return <HotelQuotationStep2 />;
-  }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -568,7 +573,6 @@ const QuotationForm = () => {
         </Section>
 
         {/* Pickup / Drop */}
-        {/* Pickup / Drop */}
         <Section title="Pickup / Drop">
           {pickupDropFields.map((f) => (
             <Grid key={f.name} size={{ xs: 4 }}>
@@ -591,7 +595,7 @@ const QuotationForm = () => {
                   fullWidth
                   name={f.name}
                   label={f.label}
-                  value={formik.values[f.name] || ""} // ← ensures prefill
+                  value={formik.values[f.name] || ""}
                   onChange={formik.handleChange}
                 >
                   {f.options.map((o) => (
@@ -614,7 +618,6 @@ const QuotationForm = () => {
             />
           </Grid>
         </Section>
-
 
         {/* Validity */}
         <Section title="Quotation Validity">
@@ -715,6 +718,7 @@ const QuotationForm = () => {
           </Button>
         </Box>
       </form>
+
       {/* Add New Service Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Add New Service</DialogTitle>
@@ -739,4 +743,4 @@ const QuotationForm = () => {
   );
 };
 
-export default QuotationForm;
+export default HotelQuotationStep1;

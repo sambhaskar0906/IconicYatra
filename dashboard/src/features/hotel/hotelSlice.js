@@ -186,12 +186,42 @@ export const updateHotelStatus = createAsyncThunk(
     }
 );
 
+export const filterHotelsByCity = createAsyncThunk(
+    "hotel/filterHotelsByCity",
+    async (cityName, { rejectWithValue, getState }) => {
+        try {
+            const state = getState();
+            const allHotels = state.hotel.hotels;
+
+            if (!cityName || cityName.trim() === "") {
+                return allHotels; // Return all hotels if no city specified
+            }
+
+            // Case-insensitive search in city name, hotel name, or state
+            const filtered = allHotels.filter(hotel => {
+                const searchTerm = cityName.toLowerCase().trim();
+                return (
+                    hotel.location?.city?.toLowerCase().includes(searchTerm) ||
+                    hotel.hotelName?.toLowerCase().includes(searchTerm) ||
+                    hotel.location?.state?.toLowerCase().includes(searchTerm)
+                );
+            });
+
+            return filtered;
+        } catch (err) {
+            return rejectWithValue(err.message);
+        }
+    }
+);
+
+
 // ----------- Slice -----------
 
 const hotelSlice = createSlice({
     name: "hotel",
     initialState: {
         hotels: [],
+        filteredHotels: [],
         hotel: null,
         loading: false,
         error: null,
@@ -211,12 +241,26 @@ const hotelSlice = createSlice({
             state.loading = false;
             state.currentStep = 1;
             state.hotelId = null;
+            state.filteredHotels = [];
         },
         setCurrentStep: (state, action) => {
             state.currentStep = action.payload;
         },
         setHotelId: (state, action) => {
             state.hotelId = action.payload;
+        },
+        filterHotelsByCityManual: (state, action) => {
+            const cityName = action.payload;
+            if (!cityName || cityName.trim() === "") {
+                state.filteredHotels = state.hotels;
+            } else {
+                const searchTerm = cityName.toLowerCase().trim();
+                state.filteredHotels = state.hotels.filter(hotel =>
+                    hotel.location?.city?.toLowerCase().includes(searchTerm) ||
+                    hotel.hotelName?.toLowerCase().includes(searchTerm) ||
+                    hotel.location?.state?.toLowerCase().includes(searchTerm)
+                );
+            }
         },
     },
     extraReducers: (builder) => {
@@ -330,6 +374,7 @@ const hotelSlice = createSlice({
             .addCase(fetchHotels.fulfilled, (state, action) => {
                 state.loading = false;
                 state.hotels = action.payload;
+                state.filteredHotels = action.payload;
             })
             .addCase(fetchHotels.rejected, (state, action) => {
                 state.loading = false;
@@ -406,6 +451,18 @@ const hotelSlice = createSlice({
             .addCase(updateHotelStatus.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+            .addCase(filterHotelsByCity.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(filterHotelsByCity.fulfilled, (state, action) => {
+                state.loading = false;
+                state.filteredHotels = action.payload;
+            })
+            .addCase(filterHotelsByCity.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     },
 });
@@ -414,6 +471,7 @@ export const {
     clearMessages,
     resetHotelState,
     setCurrentStep,
-    setHotelId
+    setHotelId,
+    filterHotelsByCityManual
 } = hotelSlice.actions;
 export default hotelSlice.reducer;
