@@ -11,7 +11,7 @@ export const vehicleDetailsSchema = new mongoose.Schema({
         },
         tripType: {
             type: String,
-            enum: ['One Way', 'Round Trip'],
+            enum: ["OneWay", "RoundTrip"],
             required: true
         },
         noOfDays: {
@@ -20,7 +20,6 @@ export const vehicleDetailsSchema = new mongoose.Schema({
         },
         perDayCost: {
             type: String,
-            required: true
         }
 
     },

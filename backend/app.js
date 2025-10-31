@@ -65,6 +65,9 @@ app.use("/api/v1/lead-options", leadOptionsRoutes);
 import hotelQuotationRouter from "./src/routers/quotation/hotelQuotation.router.js";
 app.use("/api/v1/hotelQT", hotelQuotationRouter);
 
+import quickQuotationRouter from "./src/routers/quotation/quickQuotation.router.js";
+app.use("/api/v1/quickQT", quickQuotationRouter);
+
 // vehicle Quotation
 import vehicleQuotationRouter from "./src/routers/quotation/vehicleQuotation.router.js";
 app.use("/api/v1/vehicleQT", vehicleQuotationRouter);

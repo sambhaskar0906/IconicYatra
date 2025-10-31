@@ -41,11 +41,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "../../../../utils/axios";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { filterHotelsByCity } from "../../../../features/hotel/hotelSlice";
 
 const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { cities, countries, states, loading } = useSelector((state) => state.location);
+    const { filteredHotels, loading: hotelsLoading } = useSelector((state) => state.hotel);
     const { options } = useSelector((state) => state.leads);
     const [hotelOptions, setHotelOptions] = useState({});
     const [allIndianCities, setAllIndianCities] = useState([]);
@@ -147,6 +149,80 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         }
     });
 
+
+    const selectedCities = useMemo(() => {
+        return packageData?.stayLocations?.map(location => location.city) || [];
+    }, [packageData]);
+
+    useEffect(() => {
+        if (selectedCities.length > 0) {
+            const firstCity = selectedCities[0];
+            if (firstCity) {
+                console.log(`Filtering hotels for city: ${firstCity}`);
+                dispatch(filterHotelsByCity(firstCity));
+            }
+        }
+    }, [selectedCities, dispatch]);
+
+    // Filtered hotels change pe debug karein
+    useEffect(() => {
+        console.log("Filtered hotels updated:", filteredHotels);
+    }, [filteredHotels]);
+
+    const organizedHotelOptions = useMemo(() => {
+        const options = {
+            standard: [],
+            deluxe: [],
+            superior: []
+        };
+
+        filteredHotels.forEach(hotel => {
+            const category = hotel.category?.toLowerCase() || 'standard';
+
+            if (options[category]) {
+                options[category].push(hotel.hotelName);
+            } else {
+                options.standard.push(hotel.hotelName);
+            }
+        });
+
+        return options;
+    }, [filteredHotels]);
+
+    const getHotelsForDestination = (destinationCity) => {
+        if (!destinationCity) return { standard: [], deluxe: [], superior: [] };
+
+        // Case-insensitive search for destination city
+        const destinationHotels = filteredHotels.filter(hotel => {
+            const hotelCity = hotel.location?.city?.toLowerCase() || '';
+            const hotelName = hotel.hotelName?.toLowerCase() || '';
+            const searchCity = destinationCity.toLowerCase();
+
+            return hotelCity.includes(searchCity) ||
+                hotelName.includes(searchCity) ||
+                hotelCity === searchCity;
+        });
+
+        console.log(`Hotels for ${destinationCity}:`, destinationHotels); // Debugging ke liye
+
+        const organized = {
+            standard: [],
+            deluxe: [],
+            superior: []
+        };
+
+        destinationHotels.forEach(hotel => {
+            const category = (hotel.category?.toLowerCase() || 'standard');
+            const hotelName = hotel.hotelName?.trim();
+
+            if (hotelName && organized[category] && !organized[category].includes(hotelName)) {
+                organized[category].push(hotelName);
+            }
+        });
+
+        return organized;
+    };
+
     // ===== Add New Option Logic =====
     const getOptionsForField = (fieldName) => {
         const filteredOptions = options
@@ -159,15 +235,18 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         ];
     };
 
-    // Hotel categories के लिए options fetch करने का function
-    const getHotelOptionsForCategory = (category) => {
-        const fieldName = `hotel_${category}`;
-        const filteredOptions = options
-            ?.filter((opt) => opt.fieldName === fieldName)
-            .map((opt) => ({ value: opt.value, label: opt.value }));
+    const getHotelOptionsForCategory = (category, destinationCity = "") => {
+        const destinationHotels = getHotelsForDestination(destinationCity);
+        const baseOptions = destinationHotels[category] || [];
+
+        const customOptions = options
+            ?.filter(opt => opt.fieldName === `hotel_${category}`)
+            .map(opt => opt.value) || [];
+
+        const allOptions = [...new Set([...baseOptions, ...customOptions])];
 
         return [
-            ...(filteredOptions || []),
+            ...allOptions,
             { value: "__add_new", label: "+ Add New" },
         ];
     };
@@ -534,16 +613,12 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         }
     };
 
-    // Hotel change handler with Add New support
     const handleHotelChange = (destIndex, category, hotelName) => {
         if (hotelName === "__add_new") {
-            // Store the current destination index for later use
             setCurrentHotelCategory(category);
             setCurrentField(`hotel_${category}`);
-            // Store the destination index in a ref or state for later use
             setAddMore("");
             setOpenDialog(true);
-            // Store the destination index temporarily
             sessionStorage.setItem('currentDestIndex', destIndex);
             return;
         }
@@ -551,7 +626,13 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
         const updatedNights = [...tourDetails.destinationNights];
         const catIndex = ["standard", "deluxe", "superior"].indexOf(category);
 
-        if (!updatedNights[destIndex].hotels) updatedNights[destIndex].hotels = [];
+        if (!updatedNights[destIndex].hotels) {
+            updatedNights[destIndex].hotels = [
+                { category: "standard", hotelName: "", pricePerPerson: 0 },
+                { category: "deluxe", hotelName: "", pricePerPerson: 0 },
+                { category: "superior", hotelName: "", pricePerPerson: 0 },
+            ];
+        }
 
         updatedNights[destIndex].hotels[catIndex] = {
             ...updatedNights[destIndex].hotels[catIndex],
@@ -1002,113 +1083,122 @@ const TourDetailsForm = ({ onNext, initialData, packageId, packageData }) => {
                     </TextField>
                 </Grid>
 
-                {/* Hotels Table with Add New functionality */}
+               // TourDetailsForm ke hotels table section mein yeh changes karein:
+
+                {/* Hotels Table with City-wise Filtering */}
+                {/* Hotels Table with City-wise Filtering */}
                 <Table sx={{ mt: 2 }}>
                     <TableHead>
                         <TableRow>
                             <TableCell>Destination</TableCell>
                             <TableCell>Nights</TableCell>
-                            <TableCell>Standard</TableCell>
-                            <TableCell>Deluxe</TableCell>
-                            <TableCell>Superior</TableCell>
+                            <TableCell>Standard Hotels</TableCell>
+                            <TableCell>Deluxe Hotels</TableCell>
+                            <TableCell>Superior Hotels</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {tourDetails.destinationNights.map((dest, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{dest.destination}</TableCell>
-                                <TableCell>
-                                    <TextField
-                                        value={dest.nights}
-                                        fullWidth
-                                        size="small"
-                                        InputProps={{ readOnly: true }}
-                                    />
-                                </TableCell>
+                        {tourDetails.destinationNights.map((dest, index) => {
+                            const destinationCity = dest.destination;
 
-                                {/* Standard Hotel with Add New */}
-                                <TableCell>
-                                    <Autocomplete
-                                        options={getHotelOptionsForCategory("standard").map(opt => opt.value)}
-                                        value={dest.hotels[0]?.hotelName || ""}
-                                        onChange={(e, newValue) =>
-                                            handleHotelChange(index, "standard", newValue)
-                                        }
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                size="small"
-                                                placeholder="Select hotel"
-                                            />
-                                        )}
-                                        renderOption={(props, option) =>
-                                            renderHotelOption(props, option, "standard")
-                                        }
-                                    />
-                                </TableCell>
+                            return (
+                                <TableRow key={index}>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight="bold">
+                                            {destinationCity}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {getHotelsForDestination(destinationCity).standard.length +
+                                                getHotelsForDestination(destinationCity).deluxe.length +
+                                                getHotelsForDestination(destinationCity).superior.length} hotels available
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            value={dest.nights}
+                                            fullWidth
+                                            size="small"
+                                            InputProps={{ readOnly: true }}
+                                        />
+                                    </TableCell>
 
-                                {/* Deluxe Hotel with Add New */}
-                                <TableCell>
-                                    <Autocomplete
-                                        options={getHotelOptionsForCategory("deluxe").map(opt => opt.value)}
-                                        value={dest.hotels[1]?.hotelName || ""}
-                                        onChange={(e, newValue) =>
-                                            handleHotelChange(index, "deluxe", newValue)
-                                        }
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                size="small"
-                                                placeholder="Select hotel"
-                                            />
-                                        )}
-                                        renderOption={(props, option) =>
-                                            renderHotelOption(props, option, "deluxe")
-                                        }
-                                    />
-                                </TableCell>
+                                    {/* Standard Hotel - Destination Specific */}
+                                    <TableCell>
+                                        <Autocomplete
+                                            options={getHotelOptionsForCategory("standard", destinationCity).map(opt =>
+                                                typeof opt === 'object' ? opt.value : opt
+                                            )}
+                                            value={dest.hotels[0]?.hotelName || ""}
+                                            onChange={(e, newValue) =>
+                                                handleHotelChange(index, "standard", newValue)
+                                            }
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    size="small"
+                                                    placeholder="Select standard hotel"
+                                                    helperText={`${getHotelsForDestination(destinationCity).standard.length} available from API`}
+                                                />
+                                            )}
+                                            renderOption={(props, option) =>
+                                                renderHotelOption(props, option, "standard")
+                                            }
+                                            loading={hotelsLoading}
+                                        />
+                                    </TableCell>
 
-                                {/* Superior Hotel with Add New */}
-                                <TableCell>
-                                    <Autocomplete
-                                        options={getHotelOptionsForCategory("superior").map(opt => opt.value)}
-                                        value={dest.hotels[2]?.hotelName || ""}
-                                        onChange={(e, newValue) =>
-                                            handleHotelChange(index, "superior", newValue)
-                                        }
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                size="small"
-                                                placeholder="Select hotel"
-                                            />
-                                        )}
-                                        renderOption={(props, option) =>
-                                            renderHotelOption(props, option, "superior")
-                                        }
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                    {/* Deluxe Hotel - Destination Specific */}
+                                    <TableCell>
+                                        <Autocomplete
+                                            options={getHotelOptionsForCategory("deluxe", destinationCity).map(opt =>
+                                                typeof opt === 'object' ? opt.value : opt
+                                            )}
+                                            value={dest.hotels[1]?.hotelName || ""}
+                                            onChange={(e, newValue) =>
+                                                handleHotelChange(index, "deluxe", newValue)
+                                            }
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    size="small"
+                                                    placeholder="Select deluxe hotel"
+                                                    helperText={`${getHotelsForDestination(destinationCity).deluxe.length} available from API`}
+                                                />
+                                            )}
+                                            renderOption={(props, option) =>
+                                                renderHotelOption(props, option, "deluxe")
+                                            }
+                                            loading={hotelsLoading}
+                                        />
+                                    </TableCell>
 
-                        <TableRow>
-                            <TableCell colSpan={2} align="right">
-                                <Typography fontWeight="bold">Per Person Price:</Typography>
-                            </TableCell>
-                            {["standard", "deluxe", "superior"].map((cat, i) => (
-                                <TableCell key={cat}>
-                                    <TextField
-                                        type="number"
-                                        value={tourDetails.destinationNights[0]?.hotels[i]?.pricePerPerson || ""}
-                                        onChange={(e) =>
-                                            handlePriceChange(0, cat, e.target.value)
-                                        }
-                                        size="small"
-                                        fullWidth
-                                    />
-                                </TableCell>
-                            ))}
-                        </TableRow>
+                                    {/* Superior Hotel - Destination Specific */}
+                                    <TableCell>
+                                        <Autocomplete
+                                            options={getHotelOptionsForCategory("superior", destinationCity).map(opt =>
+                                                typeof opt === 'object' ? opt.value : opt
+                                            )}
+                                            value={dest.hotels[2]?.hotelName || ""}
+                                            onChange={(e, newValue) =>
+                                                handleHotelChange(index, "superior", newValue)
+                                            }
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    size="small"
+                                                    placeholder="Select superior hotel"
+                                                    helperText={`${getHotelsForDestination(destinationCity).superior.length} available from API`}
+                                                />
+                                            )}
+                                            renderOption={(props, option) =>
+                                                renderHotelOption(props, option, "superior")
+                                            }
+                                            loading={hotelsLoading}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </Grid>

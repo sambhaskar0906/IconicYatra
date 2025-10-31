@@ -3,7 +3,6 @@ import {
     createLead, viewAllLeads, updateLead, deleteLead, viewAllLeadsReports, viewByLeadId, changeLeadStatus,
     getLeadOptions, addLeadOption
 } from "../controllers/lead.controller.js"
-import { sendLeadThankYou } from "../utils/leadEmail.js";
 
 
 const router = Router();
@@ -18,8 +17,6 @@ router.route("/change-status/:leadId").patch(changeLeadStatus)
 router.get("/options", getLeadOptions);
 
 router.post("/options/add", addLeadOption);
-
-router.post("/send-lead-email", sendLeadThankYou);
 
 
 export default router;

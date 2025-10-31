@@ -1,11 +1,12 @@
 // src/components/MultiStepPackageForm.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Stepper, Step, StepLabel, Typography, Paper, Button } from "@mui/material";
 import PackageEntryForm from "../Form/PackageForm";
 import TourDetailsForm from "../Form/TourDetailsForm";
 import { useDispatch } from "react-redux";
 import { createPackage, updatePackageTourDetails } from "../../../../features/package/packageSlice";
 import { useNavigate } from "react-router-dom";
+import { fetchHotels } from "../../../../features/hotel/hotelSlice";
 
 const steps = ["Package Info", "Tour Details"];
 
@@ -17,6 +18,10 @@ const MultiStepPackageForm = () => {
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        dispatch(fetchHotels());
+    }, [dispatch]);
 
     const handleNextStep1 = async (values, stayLocations) => {
         try {

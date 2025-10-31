@@ -6,8 +6,10 @@ import {
     TextField,
     Typography,
     Paper,
+    InputAdornment,
 } from "@mui/material";
 import RoomIcon from "@mui/icons-material/Room";
+import SearchIcon from "@mui/icons-material/Search";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchDomesticCities } from "../../../../features/location/locationSlice";
@@ -22,7 +24,8 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
     const [selectedState, setSelectedState] = useState("");
     const [locations, setLocations] = useState([]);
     const [stayLocations, setStayLocations] = useState([]);
-
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredLocations, setFilteredLocations] = useState([]);
 
     useEffect(() => {
         const sector = step1Data?.sector || initialData?.selectedState || "";
@@ -32,7 +35,6 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
             console.log("Setting selected state:", sector);
         }
 
-        // Agar pehle se step2 data hai to use karo
         if (initialData) {
             if (initialData.stayLocations) {
                 setStayLocations(initialData.stayLocations);
@@ -43,7 +45,6 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
         }
     }, [initialData, step1Data]);
 
-    // Jab state change ho, cities fetch karo
     useEffect(() => {
         if (selectedState) {
             console.log("Fetching cities for state:", selectedState);
@@ -51,21 +52,17 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
         }
     }, [selectedState, dispatch]);
 
-    // Jab cities data update ho, locations set karo - FIXED
     useEffect(() => {
         if (cities && cities.length > 0) {
             console.log("Cities API response:", cities);
 
-            // Extract only city names from the objects
             const cityNames = cities.map(city => city.name);
             console.log("Extracted city names:", cityNames);
 
-            // Agar pehle se locations nahi hain to naye cities set karo
             if (locations.length === 0) {
                 setLocations(cityNames);
             }
 
-            // Agar initialData mein locations hain aur wo current cities mein available hain
             if (initialData?.locations && initialData.locations.length > 0) {
                 const validLocations = initialData.locations.filter(loc =>
                     cityNames.includes(loc)
@@ -79,31 +76,67 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
         }
     }, [cities, initialData]);
 
+    useEffect(() => {
+        if (searchTerm.trim() === "") {
+            setFilteredLocations(locations);
+        } else {
+            const filtered = locations.filter(location =>
+                location.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setFilteredLocations(filtered);
+        }
+    }, [locations, searchTerm]);
+
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm("");
+    };
+
     const handleDragEnd = (result) => {
         if (!result.destination) return;
 
         const { source, destination } = result;
 
-        // Same list reorder
-        if (source.droppableId === destination.droppableId) {
-            if (source.droppableId === "locations") {
-                const updated = Array.from(locations);
-                const [removed] = updated.splice(source.index, 1);
-                updated.splice(destination.index, 0, removed);
-                setLocations(updated);
-            } else if (source.droppableId === "stayLocations") {
-                const updated = Array.from(stayLocations);
-                const [removed] = updated.splice(source.index, 1);
-                updated.splice(destination.index, 0, removed);
-                setStayLocations(updated);
-            }
+        console.log("Drag result:", {
+            source: source.droppableId,
+            destination: destination.droppableId,
+            sourceIndex: source.index,
+            destIndex: destination.index
+        });
+
+        // Same list reorder - Locations
+        if (source.droppableId === "locations" && destination.droppableId === "locations") {
+            const updated = Array.from(locations);
+            const [removed] = updated.splice(source.index, 1);
+            updated.splice(destination.index, 0, removed);
+            setLocations(updated);
+            return;
+        }
+
+        // Same list reorder - Stay Locations
+        if (source.droppableId === "stayLocations" && destination.droppableId === "stayLocations") {
+            const updated = Array.from(stayLocations);
+            const [removed] = updated.splice(source.index, 1);
+            updated.splice(destination.index, 0, removed);
+            setStayLocations(updated);
             return;
         }
 
         // Moving from Locations → Stay Locations
         if (source.droppableId === "locations" && destination.droppableId === "stayLocations") {
+            // Use the original locations array (not filtered) to get the correct item
+            const actualSourceIndex = locations.indexOf(filteredLocations[source.index]);
+
+            if (actualSourceIndex === -1) {
+                console.error("Could not find dragged item in original locations array");
+                return;
+            }
+
             const updatedLocations = Array.from(locations);
-            const [movedItem] = updatedLocations.splice(source.index, 1);
+            const [movedItem] = updatedLocations.splice(actualSourceIndex, 1);
 
             const updatedStay = Array.from(stayLocations);
             updatedStay.splice(destination.index, 0, {
@@ -112,8 +145,10 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                 state: selectedState
             });
 
+            console.log("Moving to stay locations:", movedItem);
             setLocations(updatedLocations);
             setStayLocations(updatedStay);
+            return;
         }
 
         // Moving from Stay Locations → Locations
@@ -124,6 +159,7 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
             const updatedLocations = Array.from(locations);
             updatedLocations.splice(destination.index, 0, movedItem.name);
 
+            console.log("Moving back to locations:", movedItem.name);
             setStayLocations(updatedStay);
             setLocations(updatedLocations);
         }
@@ -136,20 +172,17 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
     };
 
     const handleSaveAndContinue = () => {
-        // Validate if at least one stay location is added
         if (stayLocations.length === 0) {
             alert("Please add at least one stay location to continue.");
             return;
         }
 
-        // Validate all stay locations have nights specified
         const incompleteLocations = stayLocations.filter(loc => !loc.nights || loc.nights === "" || isNaN(loc.nights));
         if (incompleteLocations.length > 0) {
             alert("Please specify valid number of nights for all stay locations.");
             return;
         }
 
-        // Prepare data for next step
         const stepData = {
             selectedState,
             locations,
@@ -159,13 +192,10 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
         };
 
         console.log("Step 2 Data to save:", stepData);
-
-        // Call the onNext prop with the data
         onNext(stepData);
     };
 
     const handleBack = () => {
-        // Save current state when going back
         const stepData = {
             selectedState,
             locations,
@@ -174,12 +204,11 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
         onBack(stepData);
     };
 
-    // Reset itinerary function
     const handleResetItinerary = () => {
-        // Cities ko wapas locations mein add karo
         const returnedLocations = [...locations, ...stayLocations.map(loc => loc.name)];
-        setLocations([...new Set(returnedLocations)]); // Remove duplicates
+        setLocations([...new Set(returnedLocations)]);
         setStayLocations([]);
+        setSearchTerm("");
     };
 
     // Calculate total nights and days
@@ -192,7 +221,7 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                 Quotation Itinerary {totalNights}N/{totalDays}D
             </Typography>
 
-            {/* Selected State Display (Read-only) */}
+            {/* Selected State Display */}
             <Box sx={{ mb: 3 }}>
                 <TextField
                     fullWidth
@@ -204,7 +233,6 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                 />
             </Box>
 
-            {/* State Change Warning */}
             {!selectedState && (
                 <Paper sx={{ p: 2, mb: 3, backgroundColor: '#fff3cd', border: '1px solid #ffeaa7' }}>
                     <Typography variant="body2" color="warning.dark">
@@ -213,7 +241,6 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                 </Paper>
             )}
 
-            {/* Summary Card */}
             {stayLocations.length > 0 && (
                 <Paper sx={{ p: 2, mb: 3, backgroundColor: '#e8f5e8' }}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -240,18 +267,15 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                 <strong>Sector:</strong> {selectedState}
                             </Typography>
                         </Grid>
-                    </Grid >
-                </Paper >
+                    </Grid>
+                </Paper>
             )}
 
-            {/* Loading State */}
-            {
-                citiesLoading && (
-                    <Paper sx={{ p: 3, textAlign: 'center', mb: 2 }}>
-                        <Typography>Loading cities for {selectedState}...</Typography>
-                    </Paper>
-                )
-            }
+            {citiesLoading && (
+                <Paper sx={{ p: 3, textAlign: 'center', mb: 2 }}>
+                    <Typography>Loading cities for {selectedState}...</Typography>
+                </Paper>
+            )}
 
             <DragDropContext onDragEnd={handleDragEnd}>
                 <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
@@ -269,31 +293,64 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                 Drag & drop to add to itinerary
                             </Typography>
 
+                            {/* Search Box */}
+                            <TextField
+                                fullWidth
+                                placeholder="Search cities..."
+                                value={searchTerm}
+                                onChange={handleSearchChange}
+                                sx={{ mt: 1, mb: 1 }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon color="action" />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: searchTerm && (
+                                        <InputAdornment position="end">
+                                            <Button
+                                                size="small"
+                                                onClick={handleClearSearch}
+                                                sx={{ minWidth: 'auto', p: 0.5 }}
+                                            >
+                                                Clear
+                                            </Button>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            {searchTerm && (
+                                <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
+                                    Showing {filteredLocations.length} of {locations.length} cities
+                                </Typography>
+                            )}
+
                             <Droppable droppableId="locations">
-                                {(provided) => (
+                                {(provided, snapshot) => (
                                     <Paper
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
                                         sx={{
                                             flex: 1,
                                             minHeight: 400,
-                                            maxHeight: 400, // Fixed height for consistency
+                                            maxHeight: 400,
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            overflow: 'hidden', // Important for scroll
+                                            overflow: 'hidden',
                                             mt: 1,
                                             p: 1,
                                             border: "1px solid #ddd",
+                                            backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'white',
                                         }}
                                     >
-                                        {/* Scrollable content container */}
                                         <Box sx={{
                                             flex: 1,
                                             overflowY: 'auto',
                                             display: 'flex',
                                             flexDirection: 'column'
                                         }}>
-                                            {locations.length === 0 && !citiesLoading ? (
+                                            {filteredLocations.length === 0 && !citiesLoading ? (
                                                 <Box sx={{
                                                     flex: 1,
                                                     display: 'flex',
@@ -309,14 +366,23 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                                             fontStyle: 'italic'
                                                         }}
                                                     >
-                                                        {selectedState ? `No cities found for ${selectedState}` : "Please select a sector in Step 1"}
+                                                        {searchTerm
+                                                            ? `No cities found matching "${searchTerm}"`
+                                                            : selectedState
+                                                                ? `No cities found for ${selectedState}`
+                                                                : "Please select a sector in Step 1"
+                                                        }
                                                     </Typography>
                                                 </Box>
                                             ) : (
                                                 <>
-                                                    {locations.map((loc, index) => (
-                                                        <Draggable key={loc} draggableId={loc} index={index}>
-                                                            {(provided) => (
+                                                    {filteredLocations.map((loc, index) => (
+                                                        <Draggable
+                                                            key={loc}
+                                                            draggableId={loc}
+                                                            index={index}
+                                                        >
+                                                            {(provided, snapshot) => (
                                                                 <Box
                                                                     ref={provided.innerRef}
                                                                     {...provided.draggableProps}
@@ -327,10 +393,11 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                                                         display: "flex",
                                                                         alignItems: "center",
                                                                         gap: 1,
-                                                                        bgcolor: "#f9f9f9",
+                                                                        bgcolor: snapshot.isDragging ? "#e0e0e0" : "#f9f9f9",
                                                                         borderRadius: 1,
                                                                         border: "1px solid #eee",
                                                                         cursor: "grab",
+                                                                        transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
                                                                         '&:hover': {
                                                                             bgcolor: '#f0f0f0',
                                                                         }
@@ -367,23 +434,23 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                             </Typography>
 
                             <Droppable droppableId="stayLocations">
-                                {(provided) => (
+                                {(provided, snapshot) => (
                                     <Paper
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
                                         sx={{
                                             flex: 1,
                                             minHeight: 400,
-                                            maxHeight: 400, // Fixed height for consistency
+                                            maxHeight: 400,
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            overflow: 'hidden', // Important for scroll
+                                            overflow: 'hidden',
                                             mt: 1,
                                             p: 1,
                                             border: "1px solid #ddd",
+                                            backgroundColor: snapshot.isDraggingOver ? '#e3f2fd' : 'white',
                                         }}
                                     >
-                                        {/* Scrollable content container */}
                                         <Box sx={{
                                             flex: 1,
                                             overflowY: 'auto',
@@ -412,8 +479,12 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                             ) : (
                                                 <>
                                                     {stayLocations.map((loc, index) => (
-                                                        <Draggable key={`${loc.name}-${index}`} draggableId={`${loc.name}-${index}`} index={index}>
-                                                            {(provided) => (
+                                                        <Draggable
+                                                            key={`${loc.name}-${index}`}
+                                                            draggableId={`${loc.name}-${index}`}
+                                                            index={index}
+                                                        >
+                                                            {(provided, snapshot) => (
                                                                 <Box
                                                                     ref={provided.innerRef}
                                                                     {...provided.draggableProps}
@@ -424,10 +495,11 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                                                                         display: "flex",
                                                                         flexDirection: "column",
                                                                         gap: 1,
-                                                                        bgcolor: "#e8f4ff",
+                                                                        bgcolor: snapshot.isDragging ? "#bbdefb" : "#e8f4ff",
                                                                         borderRadius: 1,
                                                                         border: "1px solid #cce4ff",
                                                                         cursor: "grab",
+                                                                        transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
                                                                         '&:hover': {
                                                                             bgcolor: '#d8e8ff',
                                                                         }
@@ -500,31 +572,26 @@ const HotelQuotationStep2 = ({ onNext, onBack, initialData, step1Data }) => {
                 </Box>
             </Box>
 
-            {/* Validation Messages */}
-            {
-                !selectedState && (
-                    <Typography
-                        variant="body2"
-                        color="error"
-                        sx={{ textAlign: 'center', mt: 2 }}
-                    >
-                        Please go back to Step 1 and select a sector first.
-                    </Typography>
-                )
-            }
+            {!selectedState && (
+                <Typography
+                    variant="body2"
+                    color="error"
+                    sx={{ textAlign: 'center', mt: 2 }}
+                >
+                    Please go back to Step 1 and select a sector first.
+                </Typography>
+            )}
 
-            {
-                selectedState && stayLocations.length === 0 && (
-                    <Typography
-                        variant="body2"
-                        color="error"
-                        sx={{ textAlign: 'center', mt: 2 }}
-                    >
-                        Please add at least one city to your itinerary to continue.
-                    </Typography>
-                )
-            }
-        </Box >
+            {selectedState && stayLocations.length === 0 && (
+                <Typography
+                    variant="body2"
+                    color="error"
+                    sx={{ textAlign: 'center', mt: 2 }}
+                >
+                    Please add at least one city to your itinerary to continue.
+                </Typography>
+            )}
+        </Box>
     );
 };
 

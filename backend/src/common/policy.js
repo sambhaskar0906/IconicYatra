@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export const policySchema = new mongoose.Schema({
     inclusionPolicy: {
-        type: [String], // or [String] if you want multiple bullet points
+        type: [String],
         default: ""
     },
     exclusionPolicy: {
@@ -21,4 +21,4 @@ export const policySchema = new mongoose.Schema({
         type: [String],
         default: ""
     }
-}, { _id: false });  // _id: false so it won’t create extra _id for subdocument
+}, { _id: false });  

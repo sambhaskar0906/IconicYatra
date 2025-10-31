@@ -10,7 +10,6 @@ const hotelQuotationSchema = new mongoose.Schema(
             },
             tourType: {
                 type: String,
-                required: true,
                 enum: ["Domestic", "International"],
 
             },
@@ -25,7 +24,6 @@ const hotelQuotationSchema = new mongoose.Schema(
             serviceRequired: [String],
             adults: {
                 type: String,
-                required: true
             },
             children: {
                 type: String,
@@ -37,11 +35,6 @@ const hotelQuotationSchema = new mongoose.Schema(
             kids: {
                 type: String,
             },
-
-
-
-
-
         },
         accommodationDetails: {
             hotelType: [String],

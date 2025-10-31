@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box,
     Grid,
@@ -21,6 +21,8 @@ import {
     AccordionSummary,
     AccordionDetails,
     IconButton,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
 import {
     DirectionsCar,
@@ -50,6 +52,8 @@ import {
     Image as ImageIcon,
     FormatQuote,
 } from "@mui/icons-material";
+import { useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 import EmailQuotationDialog from "../VehicleQuotation/Dialog/EmailQuotationDialog";
 import MakePaymentDialog from "../VehicleQuotation/Dialog/MakePaymentDialog";
@@ -59,143 +63,45 @@ import AddBankDialog from "../VehicleQuotation/Dialog/AddBankDialog";
 import EditDialog from "../VehicleQuotation/Dialog/EditDialog";
 import AddServiceDialog from "../VehicleQuotation/Dialog/AddServiceDialog";
 import AddFlightDialog from "../HotelQuotation/Dialog/FlightDialog";
+import { fetchHotelQuotationById } from "../../../../features/quotation/hotelQuotation";
 
-// Initial data separated into individual objects for better organization
-const initialCustomer = {
-    name: "Amit Jaiswal",
-    location: "Andhya Pradesh",
-    phone: "+91 7053900957",
-    email: "amit.jaiswal@example.com",
+// Helper function to format date
+const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-IN");
+    } catch {
+        return "N/A";
+    }
 };
 
-const initialPickupDetails = {
-    arrival: "Arrival: Lucknow (22/08/2025) at Airport, 3:35PM",
-    departure: "Departure: Delhi (06/09/2025) from Local Address, 6:36PM",
+// Helper function to format time
+const formatTime = (timeString) => {
+    if (!timeString) return "N/A";
+    try {
+        const time = new Date(timeString);
+        return time.toLocaleTimeString("en-IN", {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch {
+        return "N/A";
+    }
 };
-
-const initialHotelDetails = {
-    guests: "6 Adults",
-    rooms: "3 Bedroom",
-    mealPlan: "CP, AP, EP",
-    destination: "3N Borong, 2N Damthang",
-    itinerary:
-        "This is only tentative schedule for sightseeing and travel. Actual sightseeing may get affected due to weather, road conditions, local authority notices, shortage of timing, or off days.",
-};
-
-const initialVehicle = [
-    {
-        pickup: { date: "22/08/2025", time: "3:35PM" },
-        drop: { date: "06/09/2025", time: "6:36PM" },
-    },
-];
-
-const initialPricing = {
-    discount: "₹ 200",
-    gst: "₹ 140",
-    total: "₹ 3,340",
-};
-
-const initialPolicies = {
-    inclusions: [
-        "All transfers tours in a Private AC cab.",
-        "Parking, Toll charges, Fuel and Driver expenses.",
-        "Hotel Taxes.",
-        "Car AC off during hill stations.",
-    ],
-    exclusions: "1. Any Cost change... (rest of exclusions)",
-    paymentPolicy: "50% amount to pay at confirmation, balance before 10 days.",
-    cancellationPolicy: "1. Before 15 days: 50%. 2. Within 7 days: 100%.",
-    terms:
-        "1. This is only a Quote. Availability is checked only on confirmation...",
-};
-
-const initialFooter = {
-    contact: "Amit Jaiswal | +91 7053900957 (Noida)",
-    phone: "+91 7053900957",
-    email: "amit.jaiswal@example.com",
-    received: "₹ 1,500",
-    balance: "₹ 1,840",
-    company: "Iconic Yatra",
-    address: "Office No 15, Bhawani Market Sec 27, Noida, Uttar Pradesh – 201301",
-    website: "https://www.iconicyatra.com",
-};
-
-const initialActions = [
-    "Finalize",
-    "Add Service",
-    "Email Quotation",
-    "Preview PDF",
-    "Make Payment",
-    "Add Flight", // Add this line
-];
-
-// Hotel pricing table data
-const hotelPricingData = [
-    {
-        destination: "Borong",
-        nights: "3 N",
-        standard: "Tempo Heritage Resort",
-        deluxe: "Tempo Heritage Resort",
-        superior: "Yovage The Aryan Regency",
-    },
-    {
-        destination: "Damthang",
-        nights: "2 N",
-        standard: "Tempo Heritage Resort",
-        deluxe: "Tempo Heritage Resort",
-        superior: "Yovage The Aryan Regency",
-    },
-    {
-        destination: "Quotation Cost",
-        nights: "-",
-        standard: "₹ 40,366",
-        deluxe: "₹ 440,829",
-        superior: "₹ 92,358",
-    },
-    {
-        destination: "IGST",
-        nights: "-",
-        standard: "₹ 2,018.3",
-        deluxe: "₹ 22,041.4",
-        superior: "₹ 4,617.9",
-    },
-    {
-        destination: "Total Quotation Cost",
-        nights: "5 N",
-        standard: "₹ 42,384",
-        deluxe: "₹ 462,870",
-        superior: "₹ 96,976",
-    },
-];
-
-const taxOptions = [
-    { value: "gst5", label: "GST 5%", rate: 5 },
-    { value: "gst18", label: "GST 18%", rate: 18 },
-    { value: "non", label: "Non", rate: 0 },
-];
 
 const HotelFinalize = () => {
+    const { id } = useParams();
+    const dispatch = useDispatch();
+    const { quotation, loading, error } = useSelector((state) => state.hotelQuotation);
+
     // State management
     const [activeInfo, setActiveInfo] = useState(null);
     const [openFinalize, setOpenFinalize] = useState(false);
     const [vendor, setVendor] = useState("");
     const [isFinalized, setIsFinalized] = useState(false);
     const [invoiceGenerated, setInvoiceGenerated] = useState(false);
-
-    // Data state
-    const [quotation, setQuotation] = useState({
-        date: "27/08/2025",
-        reference: "41",
-        actions: initialActions,
-        customer: initialCustomer,
-        pickup: initialPickupDetails,
-        hotel: initialHotelDetails,
-        vehicles: initialVehicle,
-        pricing: initialPricing,
-        policies: initialPolicies,
-        footer: initialFooter,
-        bannerImage: "",
-    });
 
     // Dialog states
     const [editDialog, setEditDialog] = useState({
@@ -246,14 +152,194 @@ const HotelFinalize = () => {
         { value: "YES Bank", label: "YES Bank" },
     ]);
 
-    // Helper functions
-    const handleEditOpen = (
-        field,
-        value,
-        title,
-        nested = false,
-        nestedKey = ""
-    ) => {
+    const taxOptions = [
+        { value: "gst5", label: "GST 5%", rate: 5 },
+        { value: "gst18", label: "GST 18%", rate: 18 },
+        { value: "non", label: "Non", rate: 0 },
+    ];
+
+    // Fetch quotation data when component mounts or ID changes
+    useEffect(() => {
+        if (id) {
+            dispatch(fetchHotelQuotationById(id));
+        }
+    }, [dispatch, id]);
+
+    // Transform API data to component format
+    const transformQuotationData = (apiData) => {
+        if (!apiData) return null;
+
+        const clientDetails = apiData.clientDetails || {};
+        const pickupDrop = apiData.pickupDrop || {};
+        const quotationData = apiData.quotation || {};
+        const vehicleDetails = apiData.vehicleDetails || {};
+        const stayLocation = apiData.stayLocation || [];
+
+        // Calculate total guests
+        const adults = parseInt(clientDetails.adults) || 0;
+        const children = parseInt(clientDetails.children) || 0;
+        const infants = parseInt(clientDetails.infants) || 0;
+        const kids = parseInt(clientDetails.kids) || 0;
+        const totalGuests = adults + children + infants + kids;
+
+        // Calculate total rooms
+        const noOfRooms = parseInt(apiData.accommodationDetails?.noOfRooms) || 1;
+
+        // Generate hotel pricing data from stay locations
+        const hotelPricingData = stayLocation.map((location, index) => ({
+            destination: location.city || `Location ${index + 1}`,
+            nights: `${location.nights || 0} N`,
+            standard: location.standard?.hotelName || "Not specified",
+            deluxe: location.deluxe?.hotelName || "Not specified",
+            superior: location.superior?.hotelName || "Not specified",
+        }));
+
+        // Add summary rows
+        const totalNights = stayLocation.reduce((sum, loc) => sum + (loc.nights || 0), 0);
+        hotelPricingData.push(
+            {
+                destination: "Quotation Cost",
+                nights: "-",
+                standard: "₹ 40,366",
+                deluxe: "₹ 440,829",
+                superior: "₹ 92,358",
+            },
+            {
+                destination: "IGST",
+                nights: "-",
+                standard: "₹ 2,018.3",
+                deluxe: "₹ 22,041.4",
+                superior: "₹ 4,617.9",
+            },
+            {
+                destination: "Total Quotation Cost",
+                nights: `${totalNights} N`,
+                standard: "₹ 42,384",
+                deluxe: "₹ 462,870",
+                superior: "₹ 96,976",
+            }
+        );
+
+        return {
+            // Basic info
+            date: formatDate(apiData.createdAt),
+            reference: apiData.hotelQuotationId || "N/A",
+
+            // Customer info
+            customer: {
+                name: clientDetails.clientName || "N/A",
+                location: clientDetails.sector || "N/A",
+                phone: "+91 7053900957", // Default phone
+                email: "customer@example.com", // Default email
+            },
+
+            // Pickup details
+            pickup: {
+                arrival: `Arrival: ${pickupDrop.arrivalCity || "N/A"} (${formatDate(pickupDrop.arrivalDate)}) at ${pickupDrop.arrivalLocation || "N/A"}`,
+                departure: `Departure: ${pickupDrop.departureCity || "N/A"} (${formatDate(pickupDrop.departureDate)}) from ${pickupDrop.departureLocation || "N/A"}`,
+            },
+
+            // Hotel details
+            hotel: {
+                guests: `${totalGuests} ${totalGuests === 1 ? 'Person' : 'Persons'} (${adults} Adults, ${children} Children, ${infants} Infants, ${kids} Kids)`,
+                rooms: `${noOfRooms} ${noOfRooms === 1 ? 'Room' : 'Rooms'}`,
+                mealPlan: apiData.accommodationDetails?.mealPlan || "Not specified",
+                destination: stayLocation.map(loc => `${loc.nights || 0}N ${loc.city || ''}`).join(", ") || "N/A",
+                itinerary: quotationData.initialNotes || "This is only tentative schedule for sightseeing and travel. Actual sightseeing may get affected due to weather, road conditions, local authority notices, shortage of timing, or off days.",
+            },
+
+            // Vehicle details (if available)
+            vehicles: vehicleDetails.pickupDropDetails ? [{
+                pickup: {
+                    date: formatDate(vehicleDetails.pickupDropDetails.pickupDate),
+                    time: formatTime(vehicleDetails.pickupDropDetails.pickupTime),
+                },
+                drop: {
+                    date: formatDate(vehicleDetails.pickupDropDetails.dropDate),
+                    time: formatTime(vehicleDetails.pickupDropDetails.dropTime),
+                },
+            }] : [],
+
+            // Pricing
+            pricing: {
+                discount: "₹ 200",
+                gst: "₹ 140",
+                total: "₹ 3,340",
+            },
+
+            // Policies
+            policies: {
+                inclusions: [
+                    "All transfers tours in a Private AC cab.",
+                    "Parking, Toll charges, Fuel and Driver expenses.",
+                    "Hotel Taxes.",
+                    "Car AC off during hill stations.",
+                ],
+                exclusions: apiData.quotationExculsion || "1. Any Cost change...",
+                paymentPolicy: apiData.paymentPolicies || "50% amount to pay at confirmation, balance before 10 days.",
+                cancellationPolicy: apiData.CancellationRefund || "1. Before 15 days: 50%. 2. Within 7 days: 100%.",
+                terms: apiData.termsAndConditions || "1. This is only a Quote. Availability is checked only on confirmation...",
+            },
+
+            // Footer
+            footer: {
+                contact: `${clientDetails.clientName || "N/A"} | +91 7053900957 (Noida)`,
+                phone: "+91 7053900957",
+                email: "amit.jaiswal@example.com",
+                received: "₹ 1,500",
+                balance: "₹ 1,840",
+                company: "Iconic Yatra",
+                address: "Office No 15, Bhawani Market Sec 27, Noida, Uttar Pradesh – 201301",
+                website: "https://www.iconicyatra.com",
+            },
+
+            // Additional data
+            bannerImage: quotationData.selectBannerImage || "",
+            hotelPricingData,
+        };
+    };
+
+    const quotationData = transformQuotationData(quotation);
+
+    // Show loading state
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                <CircularProgress />
+                <Typography variant="h6" sx={{ ml: 2 }}>
+                    Loading quotation data...
+                </Typography>
+            </Box>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <Box p={3}>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    Error loading quotation: {error}
+                </Alert>
+                <Button variant="contained" onClick={() => dispatch(fetchHotelQuotationById(id))}>
+                    Retry
+                </Button>
+            </Box>
+        );
+    }
+
+    // Show no data state
+    if (!quotationData) {
+        return (
+            <Box p={3}>
+                <Alert severity="warning">
+                    No quotation data found for ID: {id}
+                </Alert>
+            </Box>
+        );
+    }
+
+    // Rest of your existing helper functions and handlers remain the same...
+    const handleEditOpen = (field, value, title, nested = false, nestedKey = "") => {
         setEditDialog({ open: true, field, value, title, nested, nestedKey });
     };
 
@@ -269,20 +355,8 @@ const HotelFinalize = () => {
     };
 
     const handleEditSave = () => {
-        if (editDialog.nested) {
-            setQuotation((prev) => ({
-                ...prev,
-                [editDialog.field]: {
-                    ...prev[editDialog.field],
-                    [editDialog.nestedKey]: editDialog.value,
-                },
-            }));
-        } else {
-            setQuotation((prev) => ({
-                ...prev,
-                [editDialog.field]: editDialog.value,
-            }));
-        }
+        // Here you would typically make an API call to update the quotation
+        console.log("Updating quotation:", editDialog);
         handleEditClose();
     };
 
@@ -460,11 +534,11 @@ const HotelFinalize = () => {
 
     // Constants for UI rendering
     const infoMap = {
-        call: `📞 ${quotation.footer.phone}`,
-        email: `✉️ ${quotation.footer.email}`,
-        payment: `Received: ${quotation.footer.received}\n Balance: ${quotation.footer.balance}`,
-        quotation: `Total Quotation Cost: ${quotation.pricing.total}`,
-        guest: `No. of Guests: ${quotation.hotel.guests}`,
+        call: `📞 ${quotationData.footer.phone}`,
+        email: `✉️ ${quotationData.footer.email}`,
+        payment: `Received: ${quotationData.footer.received}\n Balance: ${quotationData.footer.balance}`,
+        quotation: `Total Quotation Cost: ${quotationData.pricing.total}`,
+        guest: `No. of Guests: ${quotationData.hotel.guests}`,
     };
 
     const infoChips = [
@@ -488,7 +562,7 @@ const HotelFinalize = () => {
             icon: <CheckCircle sx={{ mr: 0.5, color: "success.main" }} />,
             content: (
                 <List dense>
-                    {quotation.policies.inclusions.map((i, k) => (
+                    {quotationData.policies.inclusions.map((i, k) => (
                         <ListItem key={k}>
                             <ListItemText primary={i} />
                         </ListItem>
@@ -501,19 +575,19 @@ const HotelFinalize = () => {
         {
             title: "Exclusion Policy",
             icon: <Cancel sx={{ mr: 0.5, color: "error.main" }} />,
-            content: quotation.policies.exclusions,
+            content: quotationData.policies.exclusions,
             field: "policies.exclusions",
         },
         {
             title: "Payment Policy",
             icon: <Payment sx={{ mr: 0.5, color: "primary.main" }} />,
-            content: quotation.policies.paymentPolicy,
+            content: quotationData.policies.paymentPolicy,
             field: "policies.paymentPolicy",
         },
         {
             title: "Cancellation & Refund",
             icon: <Warning sx={{ mr: 0.5, color: "warning.main" }} />,
-            content: quotation.policies.cancellationPolicy,
+            content: quotationData.policies.cancellationPolicy,
             field: "policies.cancellationPolicy",
         },
     ];
@@ -523,21 +597,21 @@ const HotelFinalize = () => {
             icon: (
                 <CheckCircle sx={{ fontSize: 16, mr: 0.5, color: "success.main" }} />
             ),
-            text: quotation.pickup.arrival,
+            text: quotationData.pickup.arrival,
             editable: true,
             field: "pickup",
             nestedKey: "arrival",
         },
         {
             icon: <Cancel sx={{ fontSize: 16, mr: 0.5, color: "error.main" }} />,
-            text: quotation.pickup.departure,
+            text: quotationData.pickup.departure,
             editable: true,
             field: "pickup",
             nestedKey: "departure",
         },
         {
             icon: <Group sx={{ fontSize: 16, mr: 0.5 }} />,
-            text: `No of Guest: ${quotation.hotel.guests}`,
+            text: `No of Guest: ${quotationData.hotel.guests}`,
             editable: true,
             field: "hotel.guests",
         },
@@ -551,6 +625,15 @@ const HotelFinalize = () => {
         "Superior",
     ];
 
+    const initialActions = [
+        "Finalize",
+        "Add Service",
+        "Email Quotation",
+        "Preview PDF",
+        "Make Payment",
+        "Add Flight",
+    ];
+
     // Action handlers
     const actionHandlers = {
         Finalize: handleFinalizeOpen,
@@ -558,7 +641,7 @@ const HotelFinalize = () => {
         "Email Quotation": handleEmailOpen,
         "Preview PDF": () => console.log("Preview PDF clicked"),
         "Make Payment": handlePaymentOpen,
-        "Add Flight": handleAddFlightOpen, // Add this line
+        "Add Flight": handleAddFlightOpen,
     };
 
     return (
@@ -570,7 +653,7 @@ const HotelFinalize = () => {
                 mb={2}
                 flexWrap="wrap"
             >
-                {quotation.actions.map((a, i) => {
+                {initialActions.map((a, i) => {
                     if (a === "Finalize" && isFinalized) return null;
 
                     return (
@@ -627,7 +710,7 @@ const HotelFinalize = () => {
                                 <Box display="flex" alignItems="center" mb={1}>
                                     <Person color="primary" sx={{ mr: 1 }} />
                                     <Typography variant="h6">
-                                        {quotation.customer.name}
+                                        {quotationData.customer.name}
                                     </Typography>
                                 </Box>
                                 <Box display="flex" alignItems="center" mb={2}>
@@ -635,7 +718,7 @@ const HotelFinalize = () => {
                                         sx={{ fontSize: 18, mr: 0.5, color: "text.secondary" }}
                                     />
                                     <Typography variant="body2" color="text.secondary">
-                                        {quotation.customer.location}
+                                        {quotationData.customer.location}
                                     </Typography>
                                 </Box>
                                 <Box display="flex" gap={1} sx={{ flexWrap: "wrap", mb: 2 }}>
@@ -692,7 +775,7 @@ const HotelFinalize = () => {
                                 <Box display="flex" alignItems="center">
                                     <CalendarToday sx={{ fontSize: 18, mr: 0.5 }} />
                                     <Typography variant="body2" fontWeight="bold">
-                                        Date: {quotation.date}
+                                        Date: {quotationData.date}
                                     </Typography>
                                 </Box>
 
@@ -713,13 +796,13 @@ const HotelFinalize = () => {
                             <Box display="flex" alignItems="center" mt={1}>
                                 <Description sx={{ fontSize: 18, mr: 0.5 }} />
                                 <Typography variant="body2" fontWeight="bold">
-                                    Ref: {quotation.reference}
+                                    Ref: {quotationData.reference}
                                 </Typography>
                             </Box>
                             <Box display="flex" alignItems="center" mt={2}>
                                 <Person sx={{ fontSize: 18, mr: 0.5 }} />
                                 <Typography variant="subtitle1" fontWeight="bold">
-                                    Kind Attention: {quotation.customer.name}
+                                    Kind Attention: {quotationData.customer.name}
                                 </Typography>
                             </Box>
 
@@ -779,13 +862,13 @@ const HotelFinalize = () => {
                                         fontWeight="bold"
                                         color="warning.main"
                                     >
-                                        Hotel Quotation For {quotation.customer.name}
+                                        Hotel Quotation For {quotationData.customer.name}
                                     </Typography>
                                 </Box>
                                 <Box display="flex" alignItems="center" mt={1}>
                                     <Route sx={{ mr: 0.5 }} />
                                     <Typography variant="subtitle2">
-                                        Destination : {quotation.hotel.destination}
+                                        Destination : {quotationData.hotel.destination}
                                     </Typography>
                                 </Box>
                                 <Box display="flex" alignItems="center" mt={1}>
@@ -802,24 +885,18 @@ const HotelFinalize = () => {
                                             onChange={(e) => {
                                                 const file = e.target.files[0];
                                                 if (file) {
-                                                    // Set the file name to display
-                                                    setQuotation((prev) => ({
-                                                        ...prev,
-                                                        bannerImage: file.name,
-                                                    }));
-
-                                                    // You can also handle the file upload here
+                                                    // Handle file upload here
                                                     console.log("Selected file:", file);
                                                 }
                                             }}
                                         />
                                     </Button>
-                                    {quotation.bannerImage && (
+                                    {quotationData.bannerImage && (
                                         <Typography
                                             variant="body2"
                                             sx={{ ml: 2, fontStyle: "italic" }}
                                         >
-                                            Selected: {quotation.bannerImage}
+                                            Selected: {quotationData.bannerImage}
                                         </Typography>
                                     )}
                                 </Box>
@@ -842,14 +919,14 @@ const HotelFinalize = () => {
                                         justifyContent="space-between"
                                     >
                                         <Typography variant="body2" sx={{ flex: 1, mr: 2 }}>
-                                            {quotation.hotel.itinerary}
+                                            {quotationData.hotel.itinerary}
                                         </Typography>
                                         <IconButton
                                             size="small"
                                             onClick={() =>
                                                 handleEditOpen(
                                                     "hotel.itinerary",
-                                                    quotation.hotel.itinerary,
+                                                    quotationData.hotel.itinerary,
                                                     "Itinerary Note"
                                                 )
                                             }
@@ -874,13 +951,13 @@ const HotelFinalize = () => {
 
                                 <Box>
                                     <Typography variant="body2" sx={{ flex: 1, mr: 2 }}>
-                                        No of Guest : {quotation.hotel.guests}
+                                        No of Guest : {quotationData.hotel.guests}
                                     </Typography>
                                     <Typography variant="body2" sx={{ flex: 1, mr: 2 }}>
-                                        No of Rooms : {quotation.hotel.rooms}
+                                        No of Rooms : {quotationData.hotel.rooms}
                                     </Typography>
                                     <Typography variant="body2" sx={{ flex: 1, mr: 2 }}>
-                                        Meal Plan : {quotation.hotel.mealPlan}
+                                        Meal Plan : {quotationData.hotel.mealPlan}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -902,16 +979,16 @@ const HotelFinalize = () => {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {hotelPricingData.map((row, index) => (
+                                            {quotationData.hotelPricingData.map((row, index) => (
                                                 <TableRow
                                                     key={index}
                                                     sx={{
                                                         backgroundColor:
-                                                            index >= hotelPricingData.length - 2
+                                                            index >= quotationData.hotelPricingData.length - 2
                                                                 ? "grey.50"
                                                                 : "inherit",
                                                         fontWeight:
-                                                            index === hotelPricingData.length - 1
+                                                            index === quotationData.hotelPricingData.length - 1
                                                                 ? "bold"
                                                                 : "normal",
                                                     }}
@@ -993,7 +1070,7 @@ const HotelFinalize = () => {
                                                 onClick={() =>
                                                     handleEditOpen(
                                                         "policies.terms",
-                                                        quotation.policies.terms,
+                                                        quotationData.policies.terms,
                                                         "Terms & Conditions"
                                                     )
                                                 }
@@ -1002,7 +1079,7 @@ const HotelFinalize = () => {
                                             </IconButton>
                                         </Box>
                                         <Typography variant="body2">
-                                            {quotation.policies.terms}
+                                            {quotationData.policies.terms}
                                         </Typography>
                                     </CardContent>
                                 </Card>
@@ -1026,7 +1103,7 @@ const HotelFinalize = () => {
                                         Thanks & Regards,
                                         <br />
                                         <Person sx={{ mr: 0.5, fontSize: 18 }} />
-                                        {quotation.footer.contact}
+                                        {quotationData.footer.contact}
                                     </Typography>
                                     <IconButton
                                         size="small"
@@ -1034,7 +1111,7 @@ const HotelFinalize = () => {
                                         onClick={() =>
                                             handleEditOpen(
                                                 "footer.contact",
-                                                quotation.footer.contact,
+                                                quotationData.footer.contact,
                                                 "Footer Contact",
                                                 false
                                             )
@@ -1047,21 +1124,21 @@ const HotelFinalize = () => {
                                     variant="subtitle1"
                                     sx={{ mt: 1, fontWeight: "bold" }}
                                 >
-                                    {quotation.footer.company}
+                                    {quotationData.footer.company}
                                 </Typography>
                                 <Box display="flex" alignItems="center" mt={0.5}>
                                     <Business sx={{ mr: 0.5, fontSize: 18 }} />
-                                    {quotation.footer.address}
+                                    {quotationData.footer.address}
                                 </Box>
                                 <Box display="flex" alignItems="center" mt={0.5}>
                                     <Language sx={{ mr: 0.5, fontSize: 18 }} />
                                     <a
-                                        href={quotation.footer.website}
+                                        href={quotationData.footer.website}
                                         target="_blank"
                                         rel="noreferrer"
                                         style={{ color: "white", textDecoration: "underline" }}
                                     >
-                                        {quotation.footer.website}
+                                        {quotationData.footer.website}
                                     </a>
                                     <Typography variant="subtitle1" sx={{ ml: 2 }}>
                                         GST : 09EYCPK8832C1ZC
@@ -1124,7 +1201,7 @@ const HotelFinalize = () => {
                 taxOptions={taxOptions}
             />
 
-            <AddFlightDialog // Add this dialog
+            <AddFlightDialog
                 open={openAddFlight}
                 onClose={handleAddFlightClose}
                 onSave={handleAddFlight}
@@ -1133,7 +1210,7 @@ const HotelFinalize = () => {
             <EmailQuotationDialog
                 open={openEmailDialog}
                 onClose={handleEmailClose}
-                customer={quotation.customer}
+                customer={quotationData.customer}
             />
 
             <MakePaymentDialog

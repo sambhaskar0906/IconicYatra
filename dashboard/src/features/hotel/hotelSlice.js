@@ -214,7 +214,6 @@ export const filterHotelsByCity = createAsyncThunk(
     }
 );
 
-
 // ----------- Slice -----------
 
 const hotelSlice = createSlice({

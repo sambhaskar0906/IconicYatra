@@ -14,16 +14,18 @@ import {
     Divider,
     CircularProgress,
     Alert,
+    Autocomplete,
+    IconButton,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import {
     fetchHotels,
     fetchHotelById,
-    filterHotelsByCity,
     filterHotelsByCityManual
 } from "../../../../features/hotel/hotelSlice";
-import HotelQuotationStep4 from "./HotelQuotationStep4";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { getLeadOptions, addLeadOption, deleteLeadOption } from "../../../../features/leads/leadSlice";
 
 const emptySection = {
     city: "",
@@ -42,17 +44,24 @@ const emptySection = {
     totalCost: "",
 };
 
-const HotelQuotationStep3 = ({ step2Data }) => {
+// ✅ FIXED: Proper props add kiye
+const HotelQuotationStep3 = ({ onNext, onBack, initialData, step1Data, step2Data }) => {
     const dispatch = useDispatch();
     const { hotels, filteredHotels, loading, error } = useSelector((state) => state.hotel);
+    const { options } = useSelector((state) => state.leads);
 
     const [openDialog, setOpenDialog] = useState(false);
     const [newHotelName, setNewHotelName] = useState("");
-    const [showStep4, setShowStep4] = useState(false);
     const [selectedHotelsData, setSelectedHotelsData] = useState({});
     const [sectionLoading, setSectionLoading] = useState({});
     const [availableCities, setAvailableCities] = useState([]);
     const [cityNightsMap, setCityNightsMap] = useState({});
+
+    // Add New functionality ke liye states
+    const [currentField, setCurrentField] = useState("");
+    const [addMore, setAddMore] = useState("");
+    const [citySearch, setCitySearch] = useState("");
+    const [filteredCityOptions, setFilteredCityOptions] = useState([]);
 
     // Step 2 se cities aur nights extract karein
     useEffect(() => {
@@ -74,7 +83,7 @@ const HotelQuotationStep3 = ({ step2Data }) => {
             const initialSections = cities.map((city, index) => ({
                 ...emptySection,
                 city: city,
-                noNights: nightsMap[city] || "", // Automatically set nights
+                noNights: nightsMap[city] || "",
                 label: `${city} Hotels (${nightsMap[city] || 0} Nights)`,
                 removable: false
             }));
@@ -86,9 +95,22 @@ const HotelQuotationStep3 = ({ step2Data }) => {
     // Fetch all hotels on component mount
     useEffect(() => {
         dispatch(fetchHotels());
+        dispatch(getLeadOptions()); // Lead options fetch karo
     }, [dispatch]);
 
-    // Extract hotel names from FILTERED hotels (city-wise)
+    // City search filter
+    useEffect(() => {
+        if (citySearch.trim() === "") {
+            setFilteredCityOptions(availableCities);
+        } else {
+            const filtered = availableCities.filter(city =>
+                city.toLowerCase().includes(citySearch.toLowerCase())
+            );
+            setFilteredCityOptions(filtered);
+        }
+    }, [citySearch, availableCities]);
+
+    // Extract hotel names from FILTERED hotels (city-wise) with Add New option
     const getHotelNamesForCity = (cityName) => {
         if (!cityName) return [];
 
@@ -99,7 +121,19 @@ const HotelQuotationStep3 = ({ step2Data }) => {
             hotel.location?.state?.toLowerCase().includes(searchTerm)
         );
 
-        return cityHotels.map(hotel => hotel.hotelName);
+        const hotelNames = cityHotels.map(hotel => hotel.hotelName);
+
+        // Custom added hotels for this city
+        const customHotels = options
+            ?.filter(opt => opt.fieldName === "hotel_custom")
+            .map(opt => opt.value) || [];
+
+        const allHotels = [...new Set([...hotelNames, ...customHotels])];
+
+        return [
+            ...allHotels,
+            "__add_new" // Add New option
+        ];
     };
 
     // Function to fetch hotel details when hotel is selected
@@ -164,20 +198,69 @@ const HotelQuotationStep3 = ({ step2Data }) => {
         }
     };
 
+    // ✅ FIXED: Formik setup with proper onSubmit
     const formik = useFormik({
         initialValues: {
             sections: [],
         },
         onSubmit: (values) => {
-            console.log("Form Values:", values);
+            console.log("✅ STEP3 - Form submitted with values:", values);
+
+            // ✅ FIXED: onNext call karein proper data ke saath
+            const stepData = {
+                hotelSections: values.sections,
+                totalHotelCost: values.sections.reduce((total, section) =>
+                    total + (parseInt(section.totalCost) || 0), 0
+                )
+            };
+
+            console.log("🚀 STEP3 - Sending data to main:", stepData);
+            onNext(stepData); // ✅ Yeh line important hai!
         },
     });
 
-    const handleAddHotel = () => {
-        if (newHotelName.trim()) {
-            setNewHotelName("");
-            setOpenDialog(false);
-            dispatch(fetchHotels());
+    // ===== ADD NEW & DELETE FUNCTIONALITY =====
+    const handleOpenDialog = (field) => {
+        setCurrentField(field);
+        setAddMore("");
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setCurrentField("");
+    };
+
+    const handleAddNewItem = async () => {
+        if (!addMore.trim()) return;
+
+        try {
+            const newValue = addMore.trim();
+
+            // Custom field name for hotels
+            const backendField = "hotel_custom";
+
+            await dispatch(addLeadOption({ fieldName: backendField, value: newValue })).unwrap();
+
+            // Fetch updated lead options from backend
+            await dispatch(getLeadOptions()).unwrap();
+
+            handleCloseDialog();
+        } catch (error) {
+            console.error("Failed to add new option", error);
+        }
+    };
+
+    // Delete custom item function
+    const handleDeleteCustomItem = async (itemId, itemValue) => {
+        if (window.confirm(`Are you sure you want to delete "${itemValue}"?`)) {
+            try {
+                await dispatch(deleteLeadOption(itemId)).unwrap();
+                // Fetch updated options
+                await dispatch(getLeadOptions()).unwrap();
+            } catch (error) {
+                console.error("Failed to delete option", error);
+            }
         }
     };
 
@@ -206,6 +289,12 @@ const HotelQuotationStep3 = ({ step2Data }) => {
     // Handle city selection - AUTOMATICALLY SET NIGHTS
     const handleCitySelect = (e, index) => {
         const selectedCity = e.target.value;
+
+        if (selectedCity === "__add_new") {
+            handleOpenDialog("city");
+            return;
+        }
+
         const nightsFromStep2 = cityNightsMap[selectedCity] || "";
 
         formik.setFieldValue(`sections[${index}].city`, selectedCity);
@@ -229,10 +318,9 @@ const HotelQuotationStep3 = ({ step2Data }) => {
     // Handle hotel selection
     const handleHotelSelect = (e, index) => {
         const selectedHotelName = e.target.value;
-        const currentCity = formik.values.sections[index].city;
 
-        if (selectedHotelName === "add_new") {
-            setOpenDialog(true);
+        if (selectedHotelName === "__add_new") {
+            handleOpenDialog("hotel");
             return;
         }
 
@@ -325,6 +413,152 @@ const HotelQuotationStep3 = ({ step2Data }) => {
         setTimeout(() => calculateTotalCost(index), 100);
     };
 
+    // ✅ FIXED: Save & Continue function
+    const handleSaveAndContinue = () => {
+        console.log("💾 STEP3 - Save & Continue clicked");
+        formik.handleSubmit(); // ✅ Formik submit call karein
+    };
+
+    // Custom option renderer for Select fields with DELETE functionality
+    const renderOption = (props, option, fieldName) => {
+        if (option === "__add_new") {
+            return (
+                <li {...props} key="add_new" style={{
+                    color: "#1976d2",
+                    fontWeight: 600,
+                    backgroundColor: '#f0f7ff',
+                    borderBottom: '2px solid #1976d2'
+                }}>
+                    + Add New {fieldName === "city" ? "City" : "Hotel"}
+                </li>
+            );
+        }
+
+        // Check if this is a custom added item
+        const customItem = options?.find(
+            (o) => o.fieldName === "hotel_custom" && o.value === option
+        );
+
+        return (
+            <li
+                {...props}
+                key={option}
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: '8px 12px',
+                    backgroundColor: customItem ? '#f9f9f9' : 'transparent',
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <span>{option}</span>
+                    {customItem && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                ml: 1,
+                                color: 'success.main',
+                                fontStyle: 'italic'
+                            }}
+                        >
+                            (Custom)
+                        </Typography>
+                    )}
+                </Box>
+
+                {/* Delete button for custom items only */}
+                {customItem && (
+                    <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCustomItem(customItem._id, option);
+                        }}
+                        sx={{
+                            '&:hover': {
+                                backgroundColor: 'rgba(211, 47, 47, 0.1)'
+                            }
+                        }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                )}
+            </li>
+        );
+    };
+
+    // Custom option renderer for Hotel dropdown with DELETE functionality
+    const renderHotelOption = (props, option, index) => {
+        if (option === "__add_new") {
+            return (
+                <li {...props} key="add_new" style={{
+                    color: "#1976d2",
+                    fontWeight: 600,
+                    backgroundColor: '#f0f7ff',
+                    borderBottom: '2px solid #1976d2'
+                }}>
+                    + Add New Hotel
+                </li>
+            );
+        }
+
+        // Check if this is a custom added hotel
+        const customHotel = options?.find(
+            (o) => o.fieldName === "hotel_custom" && o.value === option
+        );
+
+        return (
+            <li
+                {...props}
+                key={option}
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: '8px 12px',
+                    backgroundColor: customHotel ? '#f9f9f9' : 'transparent',
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <span>{option}</span>
+                    {customHotel && (
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                ml: 1,
+                                color: 'success.main',
+                                fontStyle: 'italic'
+                            }}
+                        >
+                            (Custom)
+                        </Typography>
+                    )}
+                </Box>
+
+                {/* Delete button for custom hotels only */}
+                {customHotel && (
+                    <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCustomItem(customHotel._id, option);
+                        }}
+                        sx={{
+                            '&:hover': {
+                                backgroundColor: 'rgba(211, 47, 47, 0.1)'
+                            }
+                        }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                )}
+            </li>
+        );
+    };
+
     const renderHotelSection = (section, index) => {
         const isCitySelected = !!formik.values.sections[index].city;
         const isHotelSelected = !!formik.values.sections[index].hotelName;
@@ -354,8 +588,9 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                             variant="outlined"
                             size="small"
                             onClick={() => handleDeleteSection(index)}
+                            startIcon={<DeleteIcon />}
                         >
-                            Delete
+                            Delete Section
                         </Button>
                     )}
                 </Box>
@@ -370,7 +605,7 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                 )}
 
                 <Grid container spacing={2}>
-                    {/* City Selection */}
+                    {/* City Selection - WITH ADD NEW & DELETE */}
                     <Grid size={{ xs: 12, md: 3 }}>
                         <TextField
                             select
@@ -379,13 +614,45 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                             name={`sections[${index}].city`}
                             value={formik.values.sections[index].city}
                             onChange={(e) => handleCitySelect(e, index)}
+                            SelectProps={{
+                                renderValue: (selected) => {
+                                    const customCity = options?.find(
+                                        opt => opt.fieldName === "hotel_custom" && opt.value === selected
+                                    );
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <span>{selected}</span>
+                                            {customCity && (
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        ml: 1,
+                                                        color: 'success.main',
+                                                        fontStyle: 'italic'
+                                                    }}
+                                                >
+                                                    (Custom)
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    );
+                                }
+                            }}
                         >
                             <MenuItem value="">Select City</MenuItem>
-                            {availableCities.map((city) => (
+                            {filteredCityOptions.map((city) => (
                                 <MenuItem key={city} value={city}>
                                     {city} ({cityNightsMap[city] || 0} Nights)
                                 </MenuItem>
                             ))}
+                            <MenuItem value="__add_new" sx={{
+                                fontWeight: "bold",
+                                color: "blue",
+                                backgroundColor: '#f0f7ff',
+                                borderTop: '2px solid #1976d2'
+                            }}>
+                                + Add New City
+                            </MenuItem>
                         </TextField>
                     </Grid>
 
@@ -421,7 +688,7 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                         />
                     </Grid>
 
-                    {/* Hotel Name */}
+                    {/* Hotel Name - WITH ADD NEW & DELETE */}
                     <Grid size={{ xs: 12, md: 3 }}>
                         <TextField
                             select
@@ -431,25 +698,60 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                             value={formik.values.sections[index].hotelName}
                             onChange={(e) => handleHotelSelect(e, index)}
                             disabled={loading || !isCitySelected}
+                            SelectProps={{
+                                renderValue: (selected) => {
+                                    const customHotel = options?.find(
+                                        opt => opt.fieldName === "hotel_custom" && opt.value === selected
+                                    );
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <span>{selected}</span>
+                                            {customHotel && (
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        ml: 1,
+                                                        color: 'success.main',
+                                                        fontStyle: 'italic'
+                                                    }}
+                                                >
+                                                    (Custom)
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    );
+                                }
+                            }}
                         >
                             <MenuItem value="">Select Hotel</MenuItem>
                             {hotelNamesForCity.map((name) => (
-                                <MenuItem key={name} value={name}>
-                                    {name}
+                                <MenuItem
+                                    key={name}
+                                    value={name}
+                                    sx={{
+                                        borderLeft: options?.find(opt => opt.fieldName === "hotel_custom" && opt.value === name)
+                                            ? '4px solid #4caf50'
+                                            : 'none',
+                                        backgroundColor: options?.find(opt => opt.fieldName === "hotel_custom" && opt.value === name)
+                                            ? '#f9f9f9'
+                                            : 'transparent'
+                                    }}
+                                >
+                                    {renderHotelOption({}, name, index)}
                                 </MenuItem>
                             ))}
-                            <MenuItem value="add_new" sx={{ fontWeight: "bold", color: "blue" }}>
-                                + Add New Hotel
-                            </MenuItem>
                         </TextField>
                         {isCitySelected && (
                             <Typography variant="caption" color="text.secondary">
-                                {hotelNamesForCity.length} hotels found in {formik.values.sections[index].city}
+                                {hotelNamesForCity.length - 1} hotels available in {formik.values.sections[index].city}
+                                {options?.filter(opt => opt.fieldName === "hotel_custom").length > 0 &&
+                                    ` (${options.filter(opt => opt.fieldName === "hotel_custom").length} custom)`
+                                }
                             </Typography>
                         )}
                     </Grid>
 
-                    {/* Hotel Type */}
+                    {/* Rest of the fields remain same */}
                     <Grid size={{ xs: 12, md: 3 }}>
                         <TextField
                             fullWidth
@@ -564,7 +866,6 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                             value={formik.values.sections[index].costRoom}
                             onChange={(e) => handleRoomCostOverride(e, index)}
                             type="number"
-                            // ✅ REMOVED: disabled attribute
                             helperText="Cost per room per night"
                         />
                     </Grid>
@@ -586,32 +887,8 @@ const HotelQuotationStep3 = ({ step2Data }) => {
         );
     };
 
-    if (showStep4) {
-        return <HotelQuotationStep4 />;
-    }
-
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
-                Step 3: Hotel Selection by City
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Select hotels for each city in your itinerary. Nights are automatically filled from Step 2.
-            </Typography>
-
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
-
-            {loading && (
-                <Box textAlign="center" sx={{ mb: 2 }}>
-                    <CircularProgress />
-                    <Typography>Loading hotels...</Typography>
-                </Box>
-            )}
-
             <form onSubmit={formik.handleSubmit}>
                 {formik.values.sections.map((section, index) =>
                     renderHotelSection(section, index)
@@ -626,35 +903,61 @@ const HotelQuotationStep3 = ({ step2Data }) => {
                     >
                         + Add More Cities
                     </Button>
-                    <Box textAlign="center" sx={{ mt: 3 }}>
-                        <Button
-                            variant="contained"
-                            sx={{ px: 4, py: 1.5, borderRadius: 2 }}
-                            onClick={() => setShowStep4(true)}
-                        >
-                            Save & Continue
-                        </Button>
-                    </Box>
+                </Box>
+
+                {/* ✅ FIXED: Action Buttons */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                    <Button
+                        variant="outlined"
+                        sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+                        onClick={onBack}
+                    >
+                        Back
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+                        onClick={handleSaveAndContinue}
+                    >
+                        Save & Continue
+                    </Button>
                 </Box>
             </form>
 
-            {/* Add Hotel Dialog */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-                <DialogTitle>Add New Hotel</DialogTitle>
+            {/* Add New Dialog */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {currentField === "city" ? "Add New City" : "Add New Hotel"}
+                </DialogTitle>
                 <DialogContent>
                     <TextField
+                        fullWidth
                         autoFocus
                         margin="dense"
-                        label="Hotel Name"
-                        fullWidth
-                        value={newHotelName}
-                        onChange={(e) => setNewHotelName(e.target.value)}
+                        label={
+                            currentField === "city"
+                                ? "New City Name"
+                                : "New Hotel Name"
+                        }
+                        value={addMore}
+                        onChange={(e) => setAddMore(e.target.value)}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                                handleAddNewItem();
+                            }
+                        }}
+                        helperText={
+                            currentField === "city"
+                                ? "Enter the name of the city you want to add"
+                                : "Enter the name of the hotel you want to add"
+                        }
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-                    <Button onClick={handleAddHotel} variant="contained">
-                        Add
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleAddNewItem} variant="contained" disabled={!addMore.trim()}>
+                        Add {currentField === "city" ? "City" : "Hotel"}
                     </Button>
                 </DialogActions>
             </Dialog>

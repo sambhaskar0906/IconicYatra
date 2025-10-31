@@ -8,7 +8,6 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider,
     Alert,
     CircularProgress,
 } from "@mui/material";
@@ -18,14 +17,24 @@ import ErrorIcon from "@mui/icons-material/Error";
 const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) => {
     const { step1, step2, step3, step4 } = formData;
 
+    // Combine Step 5 fields from your API response
+    const step5 = {
+        quotationInclusion: step4?.quotationInclusion || "N/A",
+        quotationExculsion: step4?.quotationExculsion || "N/A",
+        paymentPolicies: step4?.paymentPolicies || "N/A",
+        CancellationRefund: step4?.CancellationRefund || "N/A",
+        termsAndConditions: step4?.termsAndConditions || "N/A",
+    };
+
     const handleFinalSubmit = () => {
         onSubmit();
     };
 
-    if (submissionStatus === 'success') {
+    // Success message
+    if (submissionStatus === "success") {
         return (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-                <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+            <Box sx={{ textAlign: "center", py: 8 }}>
+                <CheckCircleIcon sx={{ fontSize: 80, color: "success.main", mb: 2 }} />
                 <Typography variant="h5" gutterBottom color="success.main">
                     Quotation Created Successfully!
                 </Typography>
@@ -36,10 +45,11 @@ const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) =
         );
     }
 
-    if (submissionStatus === 'error') {
+    // Error message
+    if (submissionStatus === "error") {
         return (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-                <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
+            <Box sx={{ textAlign: "center", py: 8 }}>
+                <ErrorIcon sx={{ fontSize: 80, color: "error.main", mb: 2 }} />
                 <Typography variant="h5" gutterBottom color="error.main">
                     Submission Failed
                 </Typography>
@@ -69,16 +79,39 @@ const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) =
                 </Typography>
                 <Grid container spacing={2}>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Client:</strong> {step1.clientName}</Typography>
+                        <Typography variant="body2">
+                            <strong>Client:</strong> {step1.clientName}
+                        </Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Tour Type:</strong> {step1.tourType}</Typography>
+                        <Typography variant="body2">
+                            <strong>Tour Type:</strong> {step1.tourType}
+                        </Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Sector:</strong> {step1.sector}</Typography>
+                        <Typography variant="body2">
+                            <strong>Sector:</strong> {step1.sector}
+                        </Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Adults:</strong> {step1.adults}</Typography>
+                        <Typography variant="body2">
+                            <strong>Adults:</strong> {step1.adults}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                        <Typography variant="body2">
+                            <strong>Children:</strong> {step1.children}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                        <Typography variant="body2">
+                            <strong>Infants:</strong> {step1.infants}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                        <Typography variant="body2">
+                            <strong>Kids:</strong> {step1.kids}
+                        </Typography>
                     </Grid>
                 </Grid>
             </Paper>
@@ -93,8 +126,8 @@ const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) =
                         {step2.stayLocations.map((location, index) => (
                             <ListItem key={index}>
                                 <ListItemText
-                                    primary={location.name}
-                                    secondary={`${location.nights} nights`}
+                                    primary={location.city}
+                                    secondary={`${location.nights} night(s)`}
                                 />
                             </ListItem>
                         ))}
@@ -129,13 +162,53 @@ const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) =
                 </Typography>
                 <Grid container spacing={2}>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Vehicle:</strong> {step4.vehicleType}</Typography>
+                        <Typography variant="body2">
+                            <strong>Vehicle:</strong> {step4.vehicleType}
+                        </Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Trip Type:</strong> {step4.tripType}</Typography>
+                        <Typography variant="body2">
+                            <strong>Trip Type:</strong> {step4.tripType}
+                        </Typography>
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <Typography variant="body2"><strong>Total Cost:</strong> ₹{step4.totalCost}</Typography>
+                        <Typography variant="body2">
+                            <strong>Total Cost:</strong> ₹{step4.totalCost}
+                        </Typography>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* Step 5 Review */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" gutterBottom color="primary">
+                    Quotation Policies & Terms
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2">
+                            <strong>Inclusions:</strong> {step5.quotationInclusion}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2">
+                            <strong>Exclusions:</strong> {step5.quotationExculsion}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2">
+                            <strong>Payment Policies:</strong> {step5.paymentPolicies}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2">
+                            <strong>Cancellation & Refund:</strong> {step5.CancellationRefund}
+                        </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2">
+                            <strong>Terms & Conditions:</strong> {step5.termsAndConditions}
+                        </Typography>
                     </Grid>
                 </Grid>
             </Paper>
@@ -144,17 +217,17 @@ const HotelQuotationStep5 = ({ formData, onBack, onSubmit, submissionStatus }) =
                 After submission, you will be able to view and edit this quotation from the quotations list.
             </Alert>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}>
                 <Button onClick={onBack} variant="outlined">
                     Back
                 </Button>
                 <Button
                     onClick={handleFinalSubmit}
                     variant="contained"
-                    disabled={submissionStatus === 'loading'}
-                    startIcon={submissionStatus === 'loading' ? <CircularProgress size={20} /> : null}
+                    disabled={submissionStatus === "loading"}
+                    startIcon={submissionStatus === "loading" ? <CircularProgress size={20} /> : null}
                 >
-                    {submissionStatus === 'loading' ? 'Submitting...' : 'Submit Quotation'}
+                    {submissionStatus === "loading" ? "Submitting..." : "Submit Quotation"}
                 </Button>
             </Box>
         </Box>

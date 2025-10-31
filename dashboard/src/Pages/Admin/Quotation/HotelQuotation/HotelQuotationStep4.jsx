@@ -51,29 +51,6 @@ const HotelQuotationStep4 = ({ onNext, onBack, initialData, step1Data, step2Data
     const [newValue, setNewValue] = useState("");
     const [fieldType, setFieldType] = useState("");
 
-    // Debug component
-    const DebugInfo = () => (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2">Debug Info - Step 1 Data:</Typography>
-            <Typography variant="body2">
-                Step1 Data Available: {step1Data ? '✅ Yes' : '❌ No'}<br />
-                Client Name: {step1Data?.clientName || 'Not found'}<br />
-                Arrival Location: {step1Data?.arrivalLocation || 'Not found'}<br />
-                Departure Location: {step1Data?.departureLocation || 'Not found'}<br />
-                Arrival Date: {step1Data?.arrivalDate ? 'Available' : 'Not found'}<br />
-                Departure Date: {step1Data?.departureDate ? 'Available' : 'Not found'}
-            </Typography>
-        </Alert>
-    );
-
-    // Step 1 se data automatically fetch karein
-    useEffect(() => {
-        console.log("🔍 Step 1 Data received in Step 4:", step1Data);
-        console.log("🔍 Step 1 Client Name:", step1Data?.clientName);
-        console.log("🔍 Step 1 Arrival Location:", step1Data?.arrivalLocation);
-        console.log("🔍 Step 1 Departure Location:", step1Data?.departureLocation);
-    }, [step1Data]);
-
     // Initialize form with step1Data
     const formik = useFormik({
         initialValues: {
@@ -97,6 +74,11 @@ const HotelQuotationStep4 = ({ onNext, onBack, initialData, step1Data, step2Data
             dropDate: step1Data?.departureDate || initialData?.dropDate || null,
             dropTime: initialData?.dropTime || null,
             dropLocation: step1Data?.departureLocation || initialData?.dropLocation || "",
+            quotationInclusion: initialData?.quotationInclusion || "",
+            quotationExculsion: initialData?.quotationExculsion || "",
+            paymentPolicies: initialData?.paymentPolicies || "",
+            CancellationRefund: initialData?.CancellationRefund || "",
+            termsAndConditions: initialData?.termsAndConditions || "",
         },
         validationSchema,
         onSubmit: (values) => {
@@ -105,36 +87,20 @@ const HotelQuotationStep4 = ({ onNext, onBack, initialData, step1Data, step2Data
         enableReinitialize: true,
     });
 
-    // Initialize data from step1Data
     useEffect(() => {
-        if (step1Data) {
-            console.log("🔄 Auto-filling form with Step 1 data");
-
-            // Auto-fill pickup/drop details from step1
-            const updates = {};
-
-            if (step1Data.arrivalDate) {
-                updates.pickupDate = step1Data.arrivalDate;
-            }
-            if (step1Data.arrivalLocation) {
-                updates.pickupLocation = step1Data.arrivalLocation;
-            }
-            if (step1Data.departureDate) {
-                updates.dropDate = step1Data.departureDate;
-            }
-            if (step1Data.departureLocation) {
-                updates.dropLocation = step1Data.departureLocation;
-            }
-            if (step1Data.clientName) {
-                updates.clientName = step1Data.clientName;
-            }
-
-            // Batch update karein
-            Object.keys(updates).forEach(key => {
-                formik.setFieldValue(key, updates[key]);
-            });
+        if (step1Data?.clientName) {
+            console.log("✅ Updating form with Step 1 data:", step1Data.clientName);
+            formik.setValues((prev) => ({
+                ...prev,
+                clientName: step1Data.clientName,
+                pickupDate: step1Data.arrivalDate || prev.pickupDate,
+                dropDate: step1Data.departureDate || prev.dropDate,
+                pickupLocation: step1Data.arrivalLocation || prev.pickupLocation,
+                dropLocation: step1Data.departureLocation || prev.dropLocation,
+            }));
         }
     }, [step1Data]);
+
 
     // Auto-calculate total cost when relevant fields change
     useEffect(() => {
@@ -234,22 +200,18 @@ const HotelQuotationStep4 = ({ onNext, onBack, initialData, step1Data, step2Data
                     {/* Basic Details */}
                     <Box mb={3}>
                         <Grid container spacing={2}>
-                            {/* Client Name - Display Only (Auto-filled from Step 1) */}
                             <Grid size={{ xs: 12, md: 4 }}>
                                 <TextField
                                     fullWidth
                                     label="Client Name"
-                                    value={formik.values.clientName}
-                                    InputProps={{
-                                        readOnly: true,
-                                    }}
-                                    helperText="Auto-filled from Step 1"
+                                    name="clientName"
+                                    value={formik.values.clientName || step1Data?.clientName || ""}
+                                    InputProps={{ readOnly: true }}
                                     sx={{
-                                        '& .MuiInputBase-input': {
-                                            backgroundColor: '#f5f5f5',
-                                        }
+                                        "& .MuiInputBase-input": { backgroundColor: "#f5f5f5" },
                                     }}
                                 />
+
                             </Grid>
 
                             <Grid size={{ xs: 12, md: 4 }}>
@@ -469,6 +431,80 @@ const HotelQuotationStep4 = ({ onNext, onBack, initialData, step1Data, step2Data
                                     value={formik.values.dropLocation}
                                     onChange={formik.handleChange}
                                     helperText={step1Data?.departureLocation ? "Auto-filled from Step 1" : ""}
+                                />
+                            </Grid>
+
+                        </Grid>
+                    </Box>
+
+                    <Box mb={3}>
+                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                            Quotation Policies & Terms
+                        </Typography>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Inclusions"
+                                    name="quotationInclusion"
+                                    value={formik.values.quotationInclusion}
+                                    onChange={formik.handleChange}
+                                    multiline
+                                    minRows={3}
+                                    error={formik.touched.quotationInclusion && Boolean(formik.errors.quotationInclusion)}
+                                    helperText={formik.touched.quotationInclusion && formik.errors.quotationInclusion}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Exclusions"
+                                    name="quotationExculsion"
+                                    value={formik.values.quotationExculsion}
+                                    onChange={formik.handleChange}
+                                    multiline
+                                    minRows={3}
+                                    error={formik.touched.quotationExculsion && Boolean(formik.errors.quotationExculsion)}
+                                    helperText={formik.touched.quotationExculsion && formik.errors.quotationExculsion}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Payment Policies"
+                                    name="paymentPolicies"
+                                    value={formik.values.paymentPolicies}
+                                    onChange={formik.handleChange}
+                                    multiline
+                                    minRows={3}
+                                    error={formik.touched.paymentPolicies && Boolean(formik.errors.paymentPolicies)}
+                                    helperText={formik.touched.paymentPolicies && formik.errors.paymentPolicies}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Cancellation & Refund"
+                                    name="CancellationRefund"
+                                    value={formik.values.CancellationRefund}
+                                    onChange={formik.handleChange}
+                                    multiline
+                                    minRows={3}
+                                    error={formik.touched.CancellationRefund && Boolean(formik.errors.CancellationRefund)}
+                                    helperText={formik.touched.CancellationRefund && formik.errors.CancellationRefund}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Terms & Conditions"
+                                    name="termsAndConditions"
+                                    value={formik.values.termsAndConditions}
+                                    onChange={formik.handleChange}
+                                    multiline
+                                    minRows={3}
+                                    error={formik.touched.termsAndConditions && Boolean(formik.errors.termsAndConditions)}
+                                    helperText={formik.touched.termsAndConditions && formik.errors.termsAndConditions}
                                 />
                             </Grid>
                         </Grid>
